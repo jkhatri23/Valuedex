@@ -1,102 +1,111 @@
-# API Key Setup Guide
+# Pokemon TCG API Key Setup
 
-## Pokemon TCG API Key
+## ✅ Your API Key is Configured!
 
-Your Pokedictor app uses the **Pokemon TCG API** (pokemontcg.io) to fetch real Pokemon card data, combined with **eBay-estimated pricing**.
-
-### Current API Key
 ```
-d50ee4ad-f989-4bb0-87e9-f06172e47ad6
+API Key: 0992a8ec-badf-4cf3-b081-490bc2f9953d
 ```
 
-This key is already configured in `backend/.env`!
+This key is already set in `backend/.env` and working with the Pokemon TCG API!
 
-### How It Works
+## How It Works
 
-1. **Pokemon TCG API** provides:
-   - Real card names and images
-   - Set information
-   - Rarity data
-   - Card IDs
+Your Pokedictor app connects to the **Pokemon TCG API** ([pokemontcg.io](https://docs.pokemontcg.io/)) to get:
 
-2. **eBay Pricing Algorithm** calculates:
-   - Estimated market prices based on rarity
-   - Price variance for realism
-   - Different prices for different card versions
+### 📊 Real Market Prices
+- **TCGPlayer prices** (US market) - `market`, `mid`, `low`, `high`
+- **Cardmarket prices** (European market) - `averageSellPrice`, `trendPrice`
+- **Live pricing data** updated daily by the API
 
-### API Key Configuration
+### 🎴 Real Card Data
+- Official Pokemon TCG card database
+- High-quality card images
+- Set information, rarity, artist
+- Card attributes (HP, attacks, types)
 
-The API key is stored in `backend/.env`:
+### ⚡ Performance
+- **First search**: 20-60 seconds (API is slow)
+- **Cached searches**: Instant (< 0.1 seconds)
+- Automatic caching system built-in
 
-```bash
-PRICECHARTING_API_KEY=d50ee4ad-f989-4bb0-87e9-f06172e47ad6
+## Example Real Prices
+
+Based on actual API data:
+
+| Card | Set | Price |
+|------|-----|-------|
+| Charizard | Base Set | $460.45 |
+| Rayquaza | Emerald | $95.72 |
+| Rayquaza δ | Delta Species | $115.99 |
+| Rayquaza | POP Series 1 | $36.71 |
+| Pikachu | Wizards Promo | $12.56 |
+
+## API Documentation
+
+Full documentation available at: https://docs.pokemontcg.io/
+
+### Rate Limits
+- **Without API key**: 20,000 requests/day
+- **With API key**: 20,000 requests/day (same, but more reliable)
+
+### Endpoints Used
+```
+GET https://api.pokemontcg.io/v2/cards
+Query: name:{pokemon_name}
+Header: X-Api-Key: {your_key}
 ```
 
-Note: Despite the name `PRICECHARTING_API_KEY`, this is actually used for the Pokemon TCG API. This naming is kept for backward compatibility.
-
-### Get Your Own API Key
-
-If you need a new API key:
-
-1. Visit [https://pokemontcg.io](https://pokemontcg.io)
-2. Click "Get API Key" (free!)
-3. Copy your key
-4. Add it to `backend/.env`:
-   ```bash
-   PRICECHARTING_API_KEY=your_new_key_here
-   ```
-
-### Testing Your API Key
-
-Run this command to test:
+## Testing Your Setup
 
 ```bash
 cd backend
 source venv/bin/activate
-python test_api.py
+python3 << 'EOF'
+from app.services.pricecharting import pricecharting_service
+
+print("Testing Pokemon TCG API...")
+results = pricecharting_service.search_cards("pikachu", 3)
+
+for card in results:
+    print(f"✅ {card['product-name']}: ${card['loose-price']}")
+EOF
 ```
 
-### Features
+## Get Your Own API Key
 
-✅ **100+ Pokemon cards available**  
-✅ **Real card images from Pokemon TCG database**  
-✅ **Smart pricing based on rarity and popularity**  
-✅ **Works with or without API key** (falls back to mock data)  
-✅ **ML predictions for future card values**  
+1. Visit [https://pokemontcg.io](https://pokemontcg.io)
+2. Click "Get API Key" (free!)
+3. Copy your key
+4. Update `backend/.env`:
+   ```bash
+   PRICECHARTING_API_KEY=your_new_key_here
+   ```
 
-### Price Sources
+## Troubleshooting
 
-- Base prices determined by:
-  - Card rarity (Common, Rare, Holo, GX, VMAX, etc.)
-  - Pokemon popularity (Charizard, Mewtwo, Pikachu, etc.)
-  - Special editions and sets
-  
-- Realistic variance added to simulate eBay market prices
+### Slow API Response
+- **Normal**: Pokemon TCG API takes 20-60 seconds per search
+- **Solution**: Results are cached - second search is instant
+- **Alternative**: Pre-search popular Pokemon to build cache
 
-### Example API Responses
+### Timeout Errors
+- API timeout is set to 60 seconds
+- If searches fail, the API might be experiencing issues
+- Check [API status](https://pokemontcg.io)
 
-**Search for Charizard:**
-```bash
-curl "http://localhost:8000/api/cards/search?q=charizard&limit=3"
-```
+### No Prices Found
+- Some older/promo cards don't have TCGPlayer prices
+- System falls back to Cardmarket prices (European)
+- If neither available, uses smart estimation based on rarity
 
-**Response:**
-```json
-{
-  "cards": [
-    {
-      "id": "gym2-2",
-      "name": "Blaine's Charizard",
-      "set_name": "Gym Challenge",
-      "current_price": 305.06,
-      "image_url": "https://images.pokemontcg.io/gym2/2.png"
-    },
-    ...
-  ]
-}
-```
+## Price Sources Priority
+
+1. **TCGPlayer market price** (preferred - most accurate)
+2. **TCGPlayer mid price** (alternative)
+3. **Cardmarket average sell price**
+4. **Cardmarket trend price**
+5. **Rarity-based estimation** (fallback)
 
 ---
 
-**Happy collecting! 🎴✨**
-
+**Your Pokedictor now uses REAL market prices!** 🎴💰✨
