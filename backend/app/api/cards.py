@@ -69,7 +69,12 @@ async def get_card_detail(card_id: str, db: Session = Depends(get_db)):
         card_data = pricecharting_service.get_card_by_id(card_id)
         
         if not card_data:
-            raise HTTPException(status_code=404, detail="Card not found")
+            # If we can't fetch the card details, return a minimal response
+            # using data from the search result if available
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Card {card_id} not found. The Pokemon TCG API may be slow or unavailable."
+            )
         
         # Create card - use real data from Pokemon TCG API
         release_year = None

@@ -18,10 +18,18 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
     const searchTimeout = setTimeout(async () => {
       if (query.length > 1) {
         setIsLoading(true)
-        const cards = await searchCards(query)
-        setResults(cards)
-        setIsLoading(false)
-        setShowResults(true)
+        try {
+          const cards = await searchCards(query)
+          console.log('Search results:', cards)
+          setResults(cards || [])
+          setShowResults(true)
+        } catch (error) {
+          console.error('Error in search:', error)
+          setResults([])
+          setShowResults(false)
+        } finally {
+          setIsLoading(false)
+        }
       } else {
         setResults([])
         setShowResults(false)
@@ -45,7 +53,7 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search for Pokemon cards (e.g., Charizard, Pikachu)..."
-          className="w-full px-5 py-4 pl-12 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+          className="w-full px-5 py-4 pl-12 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-gray-900 placeholder:text-gray-400 bg-white"
         />
         <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
           {isLoading ? (
@@ -58,26 +66,29 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
 
       {/* Search Results Dropdown */}
       {showResults && results.length > 0 && (
-        <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-96 overflow-y-auto">
-          {results.map((card) => (
+        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-96 overflow-y-auto">
+          {results.map((card, index) => (
             <button
-              key={card.id}
+              key={card.id || `card-${index}`}
               onClick={() => handleSelectCard(card)}
               className="w-full px-4 py-3 flex items-center space-x-4 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-b-0"
             >
               {card.image_url && (
                 <img
                   src={card.image_url}
-                  alt={card.name}
+                  alt={card.name || 'Card'}
                   className="w-12 h-16 object-cover rounded"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
                 />
               )}
               <div className="flex-1">
-                <div className="font-semibold text-gray-900">{card.name}</div>
-                <div className="text-sm text-gray-600">{card.set_name}</div>
+                <div className="font-semibold text-gray-900">{card.name || 'Unknown Card'}</div>
+                <div className="text-sm text-gray-600">{card.set_name || 'Unknown Set'}</div>
               </div>
               <div className="text-right">
-                <div className="font-bold text-blue-600">${card.current_price}</div>
+                <div className="font-bold text-blue-600">${(card.current_price || 0).toFixed(2)}</div>
                 <div className="text-xs text-gray-500">Current</div>
               </div>
             </button>
@@ -87,7 +98,7 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
 
       {/* No Results */}
       {showResults && query.length > 1 && results.length === 0 && !isLoading && (
-        <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl p-4 text-center text-gray-600">
+        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl p-4 text-center text-gray-600">
           No cards found. Try a different search term.
         </div>
       )}

@@ -65,12 +65,14 @@ export default function Home() {
 
           {/* Search Section */}
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 animate-slide-up">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 animate-slide-up overflow-visible">
               <div className="flex items-center space-x-3 mb-6">
                 <Search className="w-6 h-6 text-gray-400" />
                 <h3 className="text-2xl font-semibold text-gray-900">Search for a Card</h3>
               </div>
-              <SearchBar onSelectCard={(card) => setSelectedCard(card)} />
+              <div className="relative">
+                <SearchBar onSelectCard={(card) => setSelectedCard(card)} />
+              </div>
             </div>
           </div>
         </div>

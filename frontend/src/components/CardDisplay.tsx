@@ -12,31 +12,72 @@ interface CardDisplayProps {
 export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps) {
   const [details, setDetails] = useState<CardDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchDetails = async () => {
       setIsLoading(true)
-      const data = await getCardDetails(card.id)
-      if (data) {
-        setDetails(data)
-        onDetailsLoaded?.(data)
+      setError(null)
+      try {
+        const data = await getCardDetails(card.id)
+        if (data) {
+          setDetails(data)
+          onDetailsLoaded?.(data)
+        } else {
+          setError('Failed to load card details')
+        }
+      } catch (err: any) {
+        console.error('Error loading card details:', err)
+        setError(err.response?.data?.detail || 'Failed to load card details. The API may be slow.')
+      } finally {
+        setIsLoading(false)
       }
-      setIsLoading(false)
     }
 
     fetchDetails()
-  }, [card.id])
+  }, [card.id, onDetailsLoaded])
 
   if (isLoading) {
     return (
-      <div className="card flex items-center justify-center h-96">
+      <div className="card flex flex-col items-center justify-center h-96 space-y-4">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <p className="text-sm text-gray-600">Loading card details...</p>
+        <p className="text-xs text-gray-400">This may take 20-30 seconds</p>
       </div>
     )
   }
 
-  if (!details) {
-    return <div className="card">Failed to load card details</div>
+  if (error || !details) {
+    return (
+      <div className="card">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <p className="text-red-800 font-semibold mb-2">Error loading card details</p>
+          <p className="text-sm text-red-600">{error || 'Card details not available'}</p>
+        </div>
+        {/* Show basic card info from search result as fallback */}
+        {card && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-1">{card.name}</h2>
+              <p className="text-gray-600">{card.set_name}</p>
+            </div>
+            {card.image_url && (
+              <img
+                src={card.image_url}
+                alt={card.name}
+                className="w-full rounded-lg shadow-lg"
+              />
+            )}
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+              <div className="text-sm text-gray-600 mb-1">Current Market Price</div>
+              <div className="text-3xl font-bold text-blue-600">
+                ${(card.current_price || 0).toFixed(2)}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (

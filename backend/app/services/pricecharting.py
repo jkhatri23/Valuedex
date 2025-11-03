@@ -100,7 +100,8 @@ class PriceChartingService:
             if self.api_key:
                 headers["X-Api-Key"] = self.api_key
             
-            response = requests.get(url, headers=headers, timeout=30)
+            # Increase timeout to 60 seconds to match search timeout
+            response = requests.get(url, headers=headers, timeout=60)
             response.raise_for_status()
             
             data = response.json()
@@ -131,9 +132,14 @@ class PriceChartingService:
             self._cache[cache_key] = result
             return result
             
+        except requests.exceptions.Timeout:
+            print(f"[POKEMON TCG API] ⚠️ Timeout fetching card {card_id} - API is very slow")
+            # Try to find card in search cache as fallback
+            return self._try_find_in_cache(card_id)
         except Exception as e:
             print(f"[POKEMON TCG API] Error fetching card {card_id}: {e}")
-            return None
+            # Try to find card in search cache as fallback
+            return self._try_find_in_cache(card_id)
     
     def get_card_prices(self, product_id: str) -> Dict:
         """Get detailed price data for a specific card"""
@@ -451,6 +457,19 @@ class PriceChartingService:
             "console-name": "Pokemon Cards",
             "prices": prices
         }
+    
+    def _try_find_in_cache(self, card_id: str) -> Optional[Dict]:
+        """Try to find a card in search cache as fallback when direct fetch fails"""
+        # Search through all cached search results for this card ID
+        for cache_key, cached_data in self._cache.items():
+            if cache_key.startswith("search_"):
+                if isinstance(cached_data, list):
+                    for card in cached_data:
+                        if card.get("id") == card_id:
+                            print(f"[CACHE FALLBACK] Found card {card_id} in search cache")
+                            return card
+        print(f"[CACHE FALLBACK] Card {card_id} not found in cache")
+        return None
     
     def _populate_initial_cache(self):
         """Pre-cache popular Pokemon cards for instant results"""

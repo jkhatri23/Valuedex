@@ -72,9 +72,15 @@ export interface Prediction {
 export const searchCards = async (query: string): Promise<Card[]> => {
   try {
     const response = await api.get(`/api/cards/search?q=${encodeURIComponent(query)}`)
-    return response.data.cards
-  } catch (error) {
+    console.log('API Response:', response.data)
+    const cards = response.data.cards || response.data || []
+    console.log('Parsed cards:', cards)
+    return cards
+  } catch (error: any) {
     console.error('Error searching cards:', error)
+    if (error.response) {
+      console.error('Response error:', error.response.data)
+    }
     return []
   }
 }
