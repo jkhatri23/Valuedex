@@ -66,20 +66,27 @@ async def get_card_detail(card_id: str, db: Session = Depends(get_db)):
     
     if not card:
         # Fetch from API and create
-        results = pricecharting_service.search_cards("")
-        card_data = next((c for c in results if c.get("id") == card_id), None)
+        card_data = pricecharting_service.get_card_by_id(card_id)
         
         if not card_data:
             raise HTTPException(status_code=404, detail="Card not found")
         
-        # Create card
+        # Create card - use real data from Pokemon TCG API
+        release_year = None
+        if card_data.get("set_release"):
+            try:
+                release_year = int(card_data["set_release"].split("/")[0])
+            except:
+                release_year = _extract_year(card_data.get("console-name", ""))
+        
         card = Card(
             external_id=card_id,
             name=card_data.get("product-name"),
             set_name=card_data.get("console-name", "Unknown"),
-            rarity=_extract_rarity(card_data.get("product-name", "")),
-            artist=_get_random_artist(),
-            release_year=_extract_year(card_data.get("console-name", "")),
+            rarity=card_data.get("rarity") or _extract_rarity(card_data.get("product-name", "")),
+            artist=card_data.get("artist") or _get_random_artist(),
+            release_year=release_year or _extract_year(card_data.get("console-name", "")),
+            card_number=card_data.get("number"),
             image_url=card_data.get("image"),
             tcgplayer_url=f"https://shop.tcgplayer.com/pokemon/{card_data.get('product-name', '').replace(' ', '-')}",
             ebay_url=f"https://www.ebay.com/sch/i.html?_nkw=pokemon+{card_data.get('product-name', '').replace(' ', '+')}"
