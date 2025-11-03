@@ -9,25 +9,76 @@ settings = get_settings()
 
 class PriceChartingService:
     BASE_URL = "https://www.pricecharting.com/api"
-    POKEMON_TCG_API = "https://api.pokemontcg.io/v2"  # FREE API - No key needed!
+    POKEMON_TCG_API = "https://api.pokemontcg.io/v2"  # Pokemon TCG API
     
     def __init__(self):
         # Try both config names (pokemon_tcg_api_key and pricecharting_api_key for backward compatibility)
         self.api_key = settings.pricecharting_api_key or settings.pokemon_tcg_api_key or ""
         self.use_real_api = bool(self.api_key and self.api_key.strip())
         self.use_pokemon_tcg_api = True  # Always use Pokemon TCG API!
+        self._cache = {}  # Simple cache to avoid repeated slow API calls
         
     def search_cards(self, query: str, limit: int = 20) -> List[Dict]:
-        """Search for Pokemon cards using Pokemon TCG API with eBay pricing"""
-        # Always use Pokemon TCG API (works with or without key)
-        print(f"[INFO] Searching Pokemon TCG API for: {query}")
-        tcg_results = self._search_pokemon_tcg_api(query, limit)
-        if tcg_results:
-            return tcg_results
+        """Search for Pokemon cards using Pokemon TCG API with REAL prices"""
         
-        # If Pokemon TCG API fails, fall back to mock data
-        print(f"[INFO] Pokemon TCG API failed, using mock data")
-        return self._get_mock_search_results(query)
+        # Check cache first
+        cache_key = f"search_{query}_{limit}"
+        if cache_key in self._cache:
+            print(f"[CACHE] Returning cached results for: {query}")
+            return self._cache[cache_key]
+        
+        print(f"[INFO] Searching Pokemon TCG API for: {query} (this may take 20-30 seconds...)")
+        
+        try:
+            url = f"{self.POKEMON_TCG_API}/cards"
+            params = {"q": f"name:{query}", "pageSize": limit}
+            
+            headers = {}
+            if self.api_key:
+                headers["X-Api-Key"] = self.api_key
+                print(f"[POKEMON TCG API] Using API key... Please wait...")
+            
+            # API is slow (20-30 seconds typical), so use 60 second timeout
+            response = requests.get(url, params=params, headers=headers, timeout=60)
+            response.raise_for_status()
+            
+            data = response.json()
+            cards = data.get("data", [])
+            
+            print(f"[POKEMON TCG API] ✅ Found {len(cards)} cards!")
+            
+            if not cards:
+                print(f"[POKEMON TCG API] No cards found for: {query}")
+                return []
+            
+            results = []
+            for card in cards:
+                card_name = card.get("name", "")
+                set_name = card.get("set", {}).get("name", "Pokemon TCG")
+                
+                # Extract REAL prices from API
+                price = self._extract_real_price(card)
+                
+                results.append({
+                    "id": card.get("id", ""),
+                    "product-name": card_name,
+                    "console-name": set_name,
+                    "loose-price": price,
+                    "cib-price": price * 1.2,  # Slightly higher for complete
+                    "new-price": price * 1.5,  # Higher for mint condition
+                    "image": card.get("images", {}).get("small", "")
+                })
+            
+            # Cache the results
+            self._cache[cache_key] = results
+            return results
+            
+        except requests.exceptions.Timeout:
+            print(f"[POKEMON TCG API] ⚠️ Timeout after 60s - API is very slow")
+            return []
+        except Exception as e:
+            print(f"[POKEMON TCG API] Error: {e}")
+            return []
     
     def get_card_prices(self, product_id: str) -> Dict:
         """Get detailed price data for a specific card"""
@@ -72,13 +123,17 @@ class PriceChartingService:
             else:
                 print(f"[POKEMON TCG API] Searching (no key) for: {query}")
             
-            response = requests.get(url, params=params, headers=headers, timeout=30)
+            response = requests.get(url, params=params, headers=headers, timeout=5)  # Reduced timeout
             response.raise_for_status()
             
             data = response.json()
             cards = data.get("data", [])
             
             print(f"[POKEMON TCG API] Found {len(cards)} cards!")
+            
+            if not cards:
+                print(f"[POKEMON TCG API] No cards found for: {query}")
+                return []
             
             results = []
             for card in cards:
@@ -100,31 +155,55 @@ class PriceChartingService:
             
             return results
             
+        except requests.exceptions.Timeout:
+            print(f"[POKEMON TCG API] Timeout after 5s for query: {query}")
+            return []
         except Exception as e:
             print(f"[POKEMON TCG API] Error: {e}")
             return []
     
-    def _get_ebay_price(self, card_name: str, set_name: str) -> float:
-        """Get average price from eBay for a Pokemon card"""
+    def _extract_real_price(self, card: Dict) -> float:
+        """Extract real market price from Pokemon TCG API card data"""
         try:
-            # eBay Finding API endpoint (simplified - using search scraping approach)
-            # Note: This uses eBay's public search which doesn't need API key
-            search_query = f"pokemon card {card_name} {set_name}".replace(" ", "+")
+            # Try TCGPlayer prices first (US market)
+            if "tcgplayer" in card and "prices" in card["tcgplayer"]:
+                prices = card["tcgplayer"]["prices"]
+                
+                # Try different price types in order of preference
+                for price_type in ["holofoil", "normal", "reverseHolofoil", "1stEditionHolofoil", "unlimitedHolofoil"]:
+                    if price_type in prices:
+                        price_data = prices[price_type]
+                        # Use market price if available, otherwise mid price
+                        if "market" in price_data and price_data["market"]:
+                            print(f"[PRICE] TCGPlayer market: ${price_data['market']}")
+                            return round(float(price_data["market"]), 2)
+                        elif "mid" in price_data and price_data["mid"]:
+                            print(f"[PRICE] TCGPlayer mid: ${price_data['mid']}")
+                            return round(float(price_data["mid"]), 2)
             
-            # For now, estimate based on rarity until we implement full eBay API
-            # (eBay Finding API requires separate authentication)
-            print(f"[EBAY] Getting price for: {card_name}")
+            # Try Cardmarket prices (European market)
+            if "cardmarket" in card and "prices" in card["cardmarket"]:
+                prices = card["cardmarket"]["prices"]
+                if "averageSellPrice" in prices and prices["averageSellPrice"]:
+                    price = round(float(prices["averageSellPrice"]), 2)
+                    print(f"[PRICE] Cardmarket average: ${price}")
+                    return price
+                elif "trendPrice" in prices and prices["trendPrice"]:
+                    price = round(float(prices["trendPrice"]), 2)
+                    print(f"[PRICE] Cardmarket trend: ${price}")
+                    return price
             
-            # Simulate eBay pricing based on card characteristics
-            base_price = self._estimate_price_by_rarity(card_name)
-            
-            # Add variance to make it more realistic
-            variance = random.uniform(0.8, 1.2)
-            return round(base_price * variance, 2)
+            # Fallback to estimate based on rarity
+            rarity = card.get("rarity", "Common")
+            price = self._estimate_price_by_rarity(f"{card.get('name', '')} {rarity}")
+            print(f"[PRICE] Estimated by rarity: ${price}")
+            return price
             
         except Exception as e:
-            print(f"[EBAY] Error getting price: {e}")
-            return self._estimate_price_by_rarity(card_name)
+            print(f"[PRICE] Error extracting price: {e}")
+            # Fallback to basic estimation
+            rarity = card.get("rarity", "Common")
+            return self._estimate_price_by_rarity(f"{card.get('name', '')} {rarity}")
     
     def _estimate_price_by_rarity(self, card_info: str) -> float:
         """Estimate card price based on name and rarity keywords"""
