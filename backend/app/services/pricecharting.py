@@ -18,6 +18,9 @@ class PriceChartingService:
         self.use_pokemon_tcg_api = True  # Always use Pokemon TCG API!
         self._cache = {}  # Simple cache to avoid repeated slow API calls
         
+        # Pre-cache some popular Pokemon cards for instant results
+        self._populate_initial_cache()
+        
     def search_cards(self, query: str, limit: int = 20) -> List[Dict]:
         """Search for Pokemon cards using Pokemon TCG API with REAL prices"""
         
@@ -79,6 +82,58 @@ class PriceChartingService:
         except Exception as e:
             print(f"[POKEMON TCG API] Error: {e}")
             return []
+    
+    def get_card_by_id(self, card_id: str) -> Optional[Dict]:
+        """Get a specific card by ID from Pokemon TCG API"""
+        print(f"[INFO] Fetching card by ID: {card_id}")
+        
+        # Check cache first
+        cache_key = f"card_{card_id}"
+        if cache_key in self._cache:
+            print(f"[CACHE] Returning cached card: {card_id}")
+            return self._cache[cache_key]
+        
+        try:
+            url = f"{self.POKEMON_TCG_API}/cards/{card_id}"
+            
+            headers = {}
+            if self.api_key:
+                headers["X-Api-Key"] = self.api_key
+            
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+            
+            data = response.json()
+            card = data.get("data", {})
+            
+            if not card:
+                print(f"[POKEMON TCG API] Card not found: {card_id}")
+                return None
+            
+            # Extract real price
+            price = self._extract_real_price(card)
+            
+            result = {
+                "id": card.get("id", ""),
+                "product-name": card.get("name", ""),
+                "console-name": card.get("set", {}).get("name", "Pokemon TCG"),
+                "loose-price": price,
+                "cib-price": price * 1.2,
+                "new-price": price * 1.5,
+                "image": card.get("images", {}).get("small", ""),
+                "rarity": card.get("rarity", ""),
+                "artist": card.get("artist", ""),
+                "number": card.get("number", ""),
+                "set_release": card.get("set", {}).get("releaseDate", "")
+            }
+            
+            # Cache the result
+            self._cache[cache_key] = result
+            return result
+            
+        except Exception as e:
+            print(f"[POKEMON TCG API] Error fetching card {card_id}: {e}")
+            return None
     
     def get_card_prices(self, product_id: str) -> Dict:
         """Get detailed price data for a specific card"""
@@ -396,6 +451,34 @@ class PriceChartingService:
             "console-name": "Pokemon Cards",
             "prices": prices
         }
+    
+    def _populate_initial_cache(self):
+        """Pre-cache popular Pokemon cards for instant results"""
+        print("[CACHE] Pre-loading popular Pokemon...")
+        
+        # Popular Pokemon to pre-cache (will make first searches instant!)
+        popular_cards = [
+            ("pikachu", 5),
+            ("charizard", 3),
+            ("mewtwo", 3),
+            ("rayquaza", 3),
+            ("lugia", 3)
+        ]
+        
+        # Pre-load in background (don't block startup)
+        import threading
+        def load_cache():
+            for pokemon, limit in popular_cards:
+                try:
+                    print(f"[CACHE] Pre-loading {pokemon}...")
+                    self.search_cards(pokemon, limit)
+                except Exception as e:
+                    print(f"[CACHE] Failed to pre-load {pokemon}: {e}")
+        
+        # Start loading in background thread
+        thread = threading.Thread(target=load_cache, daemon=True)
+        thread.start()
+        print("[CACHE] Background cache loading started!")
 
 # Create a singleton instance
 pricecharting_service = PriceChartingService()
