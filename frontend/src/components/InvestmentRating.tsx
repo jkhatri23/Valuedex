@@ -14,10 +14,23 @@ interface InvestmentRatingProps {
     trend_90d: number
     trend_1y: number
     volatility: number
-  }
+  } | null
 }
 
 export default function InvestmentRating({ features }: InvestmentRatingProps) {
+  // Handle null/undefined features
+  if (!features) {
+    return (
+      <div className="card">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <p className="text-yellow-800 font-semibold mb-2">Investment Rating Not Available</p>
+          <p className="text-sm text-yellow-600">
+            Features are being calculated. Please check back later or refresh the page.
+          </p>
+        </div>
+      </div>
+    )
+  }
   const getRatingColor = (rating: string) => {
     switch (rating) {
       case 'Strong Buy':

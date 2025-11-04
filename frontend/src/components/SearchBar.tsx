@@ -52,7 +52,7 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for Pokemon cards (e.g., Charizard, Pikachu)..."
+          placeholder="Search cards (e.g., Charizard, Base Set, set:Base Set)..."
           className="w-full px-5 py-4 pl-12 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-gray-900 placeholder:text-gray-400 bg-white"
         />
         <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
