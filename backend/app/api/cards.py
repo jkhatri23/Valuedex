@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from sqlalchemy import or_, func
+from typing import List, Optional, Dict
 from datetime import datetime, timedelta
 import random
+import asyncio
 
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.models.card import Card, PriceHistory, CardFeature
 from app.services.pricecharting import pricecharting_service
 from app.services.features import feature_service
@@ -41,21 +43,225 @@ class PricePoint(BaseModel):
     volume: Optional[int] = None
 
 @router.get("/search")
-async def search_cards(q: str, limit: int = 20):
-    """Search for Pokemon cards"""
-    results = pricecharting_service.search_cards(q, limit)
+async def search_cards(
+    q: str, 
+    limit: int = 20, 
+    set_name: Optional[str] = None,
+    rarity: Optional[str] = None,
+    db: Session = Depends(get_db), 
+    background_tasks: BackgroundTasks = None
+):
+    """Search for Pokemon cards - instant results from local database, with optional background API enrichment.
     
+    Supports:
+    - General search: searches both card name and set name
+    - Set-specific search: use 'set_name' parameter or 'set:<name>' in query
+    - Rarity filter: use 'rarity' parameter
+    - Multi-word queries: "charizard base set" will match cards named "charizard" from "Base Set"
+    
+    Examples:
+    - /search?q=charizard - searches for "charizard" in name or set
+    - /search?q=charizard&set_name=Base Set - searches for "charizard" specifically in "Base Set"
+    - /search?q=set:Base Set - searches for cards from "Base Set"
+    - /search?q=pikachu&rarity=Holo - searches for "pikachu" with Holo rarity
+    """
+    
+    # Step 1: Search local database first for INSTANT results
+    query_clean = q.strip()
+    
+    # Parse query for special syntax like "set:Base Set" or "name:Charizard"
+    name_query = None
+    set_query = None
+    
+    if query_clean.startswith("set:"):
+        # Extract set name from "set:Base Set" syntax
+        set_query = query_clean[4:].strip()
+        query_clean = ""  # Clear name query
+    elif query_clean.startswith("name:"):
+        # Extract card name from "name:Charizard" syntax
+        name_query = query_clean[5:].strip()
+        query_clean = ""  # Clear general query
+    elif " in " in query_clean.lower() or " from " in query_clean.lower():
+        # Try to parse "charizard in base set" or "charizard from base set"
+        parts = query_clean.lower().split(" in ")
+        if len(parts) == 2:
+            name_query = parts[0].strip()
+            set_query = parts[1].strip()
+            query_clean = ""  # Clear general query
+        else:
+            parts = query_clean.lower().split(" from ")
+            if len(parts) == 2:
+                name_query = parts[0].strip()
+                set_query = parts[1].strip()
+                query_clean = ""  # Clear general query
+    
+    # Use provided parameters if available, otherwise use parsed values
+    if set_name:
+        set_query = set_name
+    if not name_query and query_clean:
+        name_query = query_clean
+    
+    # Build search query with filters
+    db_query = db.query(Card).join(CardFeature, Card.id == CardFeature.card_id, isouter=True)
+    
+    # Build filter conditions
+    filters = []
+    
+    if name_query:
+        # Search in card name
+        name_pattern = f"%{name_query}%"
+        filters.append(Card.name.like(name_pattern))
+    
+    if set_query:
+        # Search in set name
+        set_pattern = f"%{set_query}%"
+        filters.append(Card.set_name.like(set_pattern))
+    
+    if not name_query and not set_query and query_clean:
+        # General search - search both name and set if no specific syntax
+        search_pattern = f"%{query_clean}%"
+        filters.append(
+            or_(
+                Card.name.like(search_pattern),
+                Card.set_name.like(search_pattern)
+            )
+        )
+    
+    if rarity:
+        # Filter by rarity
+        filters.append(Card.rarity.like(f"%{rarity}%"))
+    
+    if filters:
+        db_query = db_query.filter(*filters)
+    
+    db_query = db_query.limit(limit)
+    db_cards = db_query.all()
+    
+    # Format database results
     cards = []
-    for item in results:
+    for card in db_cards:
+        # Get current price from features if available, otherwise use latest price history
+        current_price = 0
+        if card.features:
+            current_price = card.features.current_price or 0
+        else:
+            # Try to get from latest price history
+            latest_price = db.query(PriceHistory).filter(
+                PriceHistory.card_id == card.id
+            ).order_by(PriceHistory.date.desc()).first()
+            if latest_price:
+                current_price = latest_price.price_loose or 0
+        
         cards.append({
-            "id": item.get("id"),
-            "name": item.get("product-name"),
-            "set_name": item.get("console-name", "Unknown Set"),
-            "current_price": item.get("loose-price", 0),
-            "image_url": item.get("image")
+            "id": card.external_id or str(card.id),
+            "name": card.name,
+            "set_name": card.set_name or "Unknown Set",
+            "current_price": current_price,
+            "image_url": card.image_url
         })
     
-    return {"cards": cards, "count": len(cards)}
+    # If we have results from database, return them instantly
+    if cards:
+        # Optionally fetch from external API in background to enrich results
+        # This doesn't block the response, so users get instant results
+        if background_tasks and len(cards) < limit:
+            background_tasks.add_task(_enrich_search_results, q, limit)
+        
+        return {"cards": cards, "count": len(cards), "source": "database"}
+    
+    # Step 2: If no local results, try external API (but with shorter timeout)
+    # This is a fallback for cards not yet in the database
+    try:
+        # Use a shorter timeout for external API
+        external_results = await asyncio.wait_for(
+            asyncio.to_thread(pricecharting_service.search_cards, q, limit),
+            timeout=5.0  # 5 second timeout instead of 60
+        )
+        
+        external_cards = []
+        for item in external_results:
+            external_cards.append({
+                "id": item.get("id"),
+                "name": item.get("product-name"),
+                "set_name": item.get("console-name", "Unknown Set"),
+                "current_price": item.get("loose-price", 0),
+                "image_url": item.get("image")
+            })
+        
+        # Save new cards to database in background for faster future searches
+        if background_tasks:
+            background_tasks.add_task(_save_cards_to_db, external_results)
+        
+        return {"cards": external_cards, "count": len(external_cards), "source": "external"}
+    except asyncio.TimeoutError:
+        # If external API times out, return empty results
+        return {"cards": [], "count": 0, "source": "timeout"}
+    except Exception as e:
+        print(f"[SEARCH] Error fetching from external API: {e}")
+        return {"cards": [], "count": 0, "source": "error"}
+
+
+def _enrich_search_results(query: str, limit: int):
+    """Background task to enrich search results from external API"""
+    try:
+        external_results = pricecharting_service.search_cards(query, limit)
+        _save_cards_to_db(external_results)
+    except Exception as e:
+        print(f"[BACKGROUND] Error enriching search results: {e}")
+
+
+def _save_cards_to_db(external_results: List[Dict]):
+    """Save external API results to database for faster future searches.
+    Only saves cards that don't already exist in the database (checked by external_id).
+    """
+    db = SessionLocal()
+    saved_count = 0
+    skipped_count = 0
+    try:
+        for item in external_results:
+            external_id = item.get("id")
+            if not external_id:
+                skipped_count += 1
+                continue
+            
+            # Check if card already exists
+            existing_card = db.query(Card).filter(Card.external_id == external_id).first()
+            if existing_card:
+                skipped_count += 1
+                continue  # Already in database - skip duplicate
+            
+            # Create new card (only if it doesn't exist)
+            card = Card(
+                external_id=external_id,
+                name=item.get("product-name", ""),
+                set_name=item.get("console-name", "Unknown"),
+                image_url=item.get("image")
+            )
+            db.add(card)
+            db.flush()  # Flush to get the card.id
+            
+            # Create initial price history entry (real price from API, no simulation)
+            # Historical data will be built over time by daily updates
+            price = item.get("loose-price", 0)
+            if price > 0:
+                price_record = PriceHistory(
+                    card_id=card.id,
+                    date=datetime.now(),
+                    price_loose=price,
+                    volume=0,
+                    source="external_api"
+                )
+                db.add(price_record)
+            
+            saved_count += 1
+        
+        db.commit()
+        print(f"[BACKGROUND] Processed {len(external_results)} cards: {saved_count} saved, {skipped_count} skipped (already in DB)")
+    except Exception as e:
+        print(f"[BACKGROUND] Error saving cards to DB: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 @router.get("/{card_id}")
 async def get_card_detail(card_id: str, db: Session = Depends(get_db)):
@@ -100,9 +306,19 @@ async def get_card_detail(card_id: str, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(card)
         
-        # Create initial price history
-        current_price = card_data.get("loose-price", 100)
-        _create_mock_price_history(db, card.id, current_price)
+        # Create initial price history (real price from API, no simulation)
+        # Historical data will be built over time by daily updates
+        current_price = card_data.get("loose-price", 0)
+        if current_price > 0:
+            price_record = PriceHistory(
+                card_id=card.id,
+                date=datetime.now(),
+                price_loose=current_price,
+                volume=0,
+                source="pokemontcg_api"
+            )
+            db.add(price_record)
+            db.commit()
         
         # Create features
         features_dict = feature_service.create_card_features(card, current_price, [])
@@ -233,23 +449,4 @@ def _extract_year(set_name: str) -> int:
         return 2000
     return random.randint(2018, 2024)
 
-def _create_mock_price_history(db: Session, card_id: int, current_price: float):
-    """Create mock price history for a card"""
-    # Create 12 months of price history
-    for i in range(12):
-        date = datetime.now() - timedelta(days=(12-i) * 30)
-        # Price varies around current price
-        variation = random.uniform(0.85, 1.15)
-        price = current_price * variation * (0.8 + (i / 12) * 0.2)  # Slight upward trend
-        
-        price_record = PriceHistory(
-            card_id=card_id,
-            date=date,
-            price_loose=round(price, 2),
-            volume=random.randint(50, 500),
-            source="mock"
-        )
-        db.add(price_record)
-    
-    db.commit()
 

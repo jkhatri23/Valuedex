@@ -98,7 +98,7 @@ export default function Home() {
                 card={selectedCard} 
                 onDetailsLoaded={setCardDetails}
               />
-              {cardDetails && (
+              {cardDetails && cardDetails.features && (
                 <InvestmentRating 
                   cardId={selectedCard.id}
                   features={cardDetails.features}
