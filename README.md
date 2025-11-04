@@ -1,4 +1,4 @@
-# 🎴 Pokedictor - Pokemon Card Value Predictor
+# 🎴 Valuedex - Pokemon Card Value Predictor
 
 A modern web application that predicts Pokemon card values using machine learning and historical market data.
 
