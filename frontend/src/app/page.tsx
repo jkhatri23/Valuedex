@@ -7,7 +7,7 @@ import CardDisplay from '@/components/CardDisplay'
 import PriceChart from '@/components/PriceChart'
 import PredictionPanel from '@/components/PredictionPanel'
 import InvestmentRating from '@/components/InvestmentRating'
-import { TrendingUp, Search } from 'lucide-react'
+import { TrendingUp, Search, Brain, Database, LineChart, Target } from 'lucide-react'
 
 export default function Home() {
   const [selectedCard, setSelectedCard] = useState<any>(null)
@@ -55,13 +55,75 @@ export default function Home() {
 
           {/* Search Section */}
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl p-8 animate-slide-up overflow-visible">
+            <div className="bg-[#121212]/70 backdrop-blur-md border border-white/10 rounded-2xl p-8 animate-slide-up overflow-visible shadow-lg shadow-black/40">
               <div className="flex items-center space-x-3 mb-6">
                 <Search className="w-6 h-6 text-gray-400" />
-                <h3 className="text-2xl font-semibold text-gray-900">Search for a Card</h3>
+                <h3 className="text-2xl font-semibold text-white">Search for a Card</h3>
               </div>
               <div className="relative">
                 <SearchBar onSelectCard={(card) => setSelectedCard(card)} />
+              </div>
+            </div>
+          </div>
+          
+          {/* How We Predict Section */}
+          <div className="mt-12 animate-slide-up">
+            <div className="bg-[#121212]/70 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-lg shadow-black/40">
+              <div className="text-center mb-8">
+                <h3 className="text-3xl font-bold text-white mb-2">How We Predict</h3>
+                <p className="text-white text-lg">Hybrid modeling using market history and card attributes</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-[#121212]/70 border border-white/10 rounded-xl p-6 text-center">
+                  <div className="bg-white/5 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <LineChart className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <h4 className="text-white font-semibold mb-1">Time Series</h4>
+                  <p className="text-white/90 text-sm">Linear regression over historical prices</p>
+                  <p className="text-white-400 text-xs mt-3">Primary weight: 60%</p>
+                </div>
+                <div className="bg-[#121212]/70 border border-white/10 rounded-xl p-6 text-center">
+                  <div className="bg-white/5 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Brain className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <h4 className="text-white font-semibold mb-1">Feature Model</h4>
+                  <p className="text-white/90 text-sm">Random Forest on rarity, popularity, artist, trend</p>
+                  <p className="text-white-400 text-xs mt-3">Secondary weight: 40%</p>
+                </div>
+                <div className="bg-[#121212]/70 border border-white/10 rounded-xl p-6 text-center">
+                  <div className="bg-white/5 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Database className="w-6 h-6 text-green-400" />
+                  </div>
+                  <h4 className="text-white font-semibold mb-1">Data Sources</h4>
+                  <p className="text-white/90 text-sm">PriceCharting market data + Pokémon TCG metadata</p>
+                  <p className="text-white-400 text-xs mt-3">Continuously synced</p>
+                </div>
+                <div className="bg-[#121212]/70 border border-white/10 rounded-xl p-6 text-center">
+                  <div className="bg-white/5 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Target className="w-6 h-6 text-orange-400" />
+                  </div>
+                  <h4 className="text-white font-semibold mb-1">Prediction Horizon</h4>
+                  <p className="text-white/90 text-sm">Forecasts up to 5 years with widening confidence</p>
+                  <p className="text-white-400 text-xs mt-3">Entertainment use only</p>
+                </div>
+              </div>
+              <div className="mt-8 bg-[#121212]/70 rounded-xl p-5 border border-white/10">
+                <div className="flex flex-col md:flex-row items-center justify-center gap-3 text-white">
+                  <div className="text-center bg-white/5 px-5 py-2 rounded-lg border border-white/20">
+                    <p className="text-xs text-white-300 mb-0.5 font-bold">Time Series</p>
+                    <p className="font-mono text-sm">Linear Regression</p>
+                  </div>
+                  <div className="text-2xl">+</div>
+                  <div className="text-center bg-white/5 px-5 py-2 rounded-lg border border-white/20">
+                    <p className="text-xs text-white-300 mb-0.5 font-bold">Features</p>
+                    <p className="font-mono text-sm">Random Forest</p>
+                  </div>
+                  <div className="text-2xl">=</div>
+                  <div className="text-center bg-white/5 px-5 py-2 rounded-lg border border-white/20">
+                    <p className="text-xs text-white-300 mb-0.5 font-bold">Final Output</p>
+                    <p className="font-mono text-sm">Hybrid Prediction</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
