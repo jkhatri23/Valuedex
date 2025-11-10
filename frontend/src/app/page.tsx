@@ -95,7 +95,7 @@ export default function Home() {
                     <Database className="w-6 h-6 text-green-400" />
                   </div>
                   <h4 className="text-white font-semibold mb-1">Data Sources</h4>
-                  <p className="text-white/90 text-sm">PriceCharting market data + Pokémon TCG metadata</p>
+                  <p className="text-white/90 text-sm">Pokémon TCG metadata</p>
                   <p className="text-white-400 text-xs mt-3">Continuously synced</p>
                 </div>
                 <div className="bg-[#121212]/70 border border-white/10 rounded-xl p-6 text-center">

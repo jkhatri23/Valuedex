@@ -72,7 +72,7 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
 
       {/* Results Dropdown */}
       {isOpen && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 max-h-96 overflow-y-auto">
+        <div className="w-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 max-h-96 overflow-y-auto">
           {results.map((card) => (
             <button
               key={card.id}
@@ -104,7 +104,7 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
 
       {/* No Results */}
       {isOpen && query.length >= 2 && !isLoading && results.length === 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 px-4 py-8 text-center">
+        <div className="w-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 px-4 py-8 text-center">
           <p className="text-gray-500">No cards found matching "{query}"</p>
           <p className="text-sm text-gray-400 mt-2">Try a different search term</p>
         </div>
