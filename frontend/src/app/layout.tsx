@@ -1,8 +1,14 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inconsolata } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const inconsolata = Inconsolata({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  style: ['normal'],
+  display: 'swap',
+  variable: '--font-inconsolata',
+})
 
 export const metadata: Metadata = {
   title: 'Pokedictor - Pokemon Card Value Predictor',
@@ -15,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className={inconsolata.variable}>
+      <body className={inconsolata.className}>
         {children}
       </body>
     </html>

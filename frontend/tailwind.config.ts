@@ -9,7 +9,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Poppins', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['var(--font-inconsolata)', 'monospace'],
+        mono: ['var(--font-inconsolata)', 'monospace'],
       },
       colors: {
         primary: {

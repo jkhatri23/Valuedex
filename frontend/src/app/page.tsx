@@ -54,7 +54,7 @@ export default function Home() {
           </div>
 
           {/* Search Section */}
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <div className="bg-[#121212]/70 backdrop-blur-md border border-white/10 rounded-2xl p-8 animate-slide-up overflow-visible shadow-lg shadow-black/40">
               <div className="flex items-center space-x-3 mb-6">
                 <Search className="w-6 h-6 text-gray-400" />
