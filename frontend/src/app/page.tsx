@@ -133,43 +133,45 @@ export default function Home() {
       {/* Card Details Section */}
       {selectedCard && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <button
-            onClick={() => {
-              setSelectedCard(null)
-              setCardDetails(null)
-            }}
-            className="mb-6 text-blue-600 hover:text-blue-800 font-medium flex items-center space-x-2"
-          >
-            <span>← Back to Search</span>
-          </button>
+          <div className="bg-[#121212]/70 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-lg shadow-black/40">
+            <button
+              onClick={() => {
+                setSelectedCard(null)
+                setCardDetails(null)
+              }}
+              className="mb-6 text-white-600 hover:text-blue-800 font-medium flex items-center space-x-2"
+            >
+              <span>← Back to Search</span>
+            </button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column - Card Info */}
-            <div className="lg:col-span-1 space-y-6">
-              <CardDisplay 
-                card={selectedCard} 
-                onDetailsLoaded={setCardDetails}
-              />
-              {cardDetails && cardDetails.features && (
-                <InvestmentRating 
-                  cardId={selectedCard.id}
-                  features={cardDetails.features}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column - Card Info */}
+              <div className="lg:col-span-1 space-y-6">
+                <CardDisplay 
+                  card={selectedCard} 
+                  onDetailsLoaded={setCardDetails}
                 />
-              )}
-            </div>
-
-            {/* Right Column - Charts and Predictions */}
-            <div className="lg:col-span-2 space-y-6">
-              {cardDetails && (
-                <>
-                  <PriceChart cardId={selectedCard.id} />
-                  <PredictionPanel 
+                {cardDetails && cardDetails.features && (
+                  <InvestmentRating 
                     cardId={selectedCard.id}
-                    cardName={selectedCard.name}
-                    currentPrice={cardDetails.current_price}
+                    features={cardDetails.features}
                   />
-                </>
-              )}
+                )}
+              </div>
+
+              {/* Right Column - Charts and Predictions */}
+              <div className="lg:col-span-2 space-y-6">
+                {cardDetails && (
+                  <>
+                    <PriceChart cardId={selectedCard.id} />
+                    <PredictionPanel 
+                      cardId={selectedCard.id}
+                      cardName={selectedCard.name}
+                      currentPrice={cardDetails.current_price}
+                    />
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
