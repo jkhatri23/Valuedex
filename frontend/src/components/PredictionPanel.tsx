@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { getPrediction, Prediction } from '@/lib/api'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Sparkles, Loader2, TrendingUp, AlertCircle } from 'lucide-react'
 
 interface PredictionPanelProps {
@@ -39,7 +39,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice }: Pred
     : []
 
   return (
-    <div className="card animate-fade-in">
+    <div className="card">
       <div className="flex items-center space-x-3 mb-6">
         <Sparkles className="w-6 h-6 text-purple-600" />
         <h3 className="text-2xl font-bold text-gray-900">Future Price Prediction</h3>
@@ -50,15 +50,15 @@ export default function PredictionPanel({ cardId, cardName, currentPrice }: Pred
         <label className="block text-sm font-medium text-gray-700 mb-3">
           Predict price in how many years?
         </label>
-        <div className="flex items-center space-x-4 mb-4">
+        <div className="flex items-center space-x-3 mb-4">
           {[1, 2, 3, 5].map((year) => (
             <button
               key={year}
               onClick={() => setYearsAhead(year)}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${
                 yearsAhead === year
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
               }`}
             >
               {year} {year === 1 ? 'Year' : 'Years'}
@@ -89,25 +89,25 @@ export default function PredictionPanel({ cardId, cardName, currentPrice }: Pred
         <div className="space-y-6 animate-fade-in">
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-blue-50 rounded-lg p-4">
+            <div className="bg-blue-50 rounded-lg p-4 text-center">
               <div className="text-sm text-gray-600 mb-1">Current Price</div>
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-3xl font-bold text-blue-600">
                 ${prediction.current_price.toFixed(2)}
               </div>
             </div>
-            <div className="bg-purple-50 rounded-lg p-4">
+            <div className="bg-purple-50 rounded-lg p-4 text-center">
               <div className="text-sm text-gray-600 mb-1">
                 Predicted ({yearsAhead}yr)
               </div>
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-3xl font-bold text-purple-600">
                 ${prediction.predicted_price.toFixed(2)}
               </div>
             </div>
-            <div className={`rounded-lg p-4 ${
+            <div className={`rounded-lg p-4 text-center ${
               prediction.growth_rate >= 0 ? 'bg-green-50' : 'bg-red-50'
             }`}>
               <div className="text-sm text-gray-600 mb-1">Expected Growth</div>
-              <div className={`text-2xl font-bold flex items-center ${
+              <div className={`text-3xl font-bold flex items-center justify-center ${
                 prediction.growth_rate >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>
                 <TrendingUp className="w-5 h-5 mr-1" />
@@ -118,16 +118,16 @@ export default function PredictionPanel({ cardId, cardName, currentPrice }: Pred
 
           {/* Confidence Range */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium text-gray-700">Confidence Range</span>
-              <AlertCircle className="w-4 h-4 text-gray-500" />
+              <AlertCircle className="w-4 h-4 text-gray-400" />
             </div>
             <div className="flex items-center space-x-2 text-sm">
-              <span className="text-gray-600">
+              <span className="text-gray-600 font-medium">
                 ${prediction.confidence_lower.toFixed(2)}
               </span>
-              <div className="flex-1 h-2 bg-gradient-to-r from-red-400 via-yellow-400 to-green-400 rounded-full"></div>
-              <span className="text-gray-600">
+              <div className="flex-1 h-2 bg-gradient-to-r from-red-300 via-yellow-300 to-green-300 rounded-full"></div>
+              <span className="text-gray-600 font-medium">
                 ${prediction.confidence_upper.toFixed(2)}
               </span>
             </div>
@@ -141,22 +141,22 @@ export default function PredictionPanel({ cardId, cardName, currentPrice }: Pred
           {/* Timeline Chart */}
           <div>
             <h4 className="text-lg font-semibold text-gray-900 mb-4">Price Projection Timeline</h4>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
                     <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
                   dataKey="year" 
-                  stroke="#6b7280"
+                  stroke="#9ca3af"
                   style={{ fontSize: '12px' }}
                 />
                 <YAxis 
-                  stroke="#6b7280"
+                  stroke="#9ca3af"
                   style={{ fontSize: '12px' }}
                   tickFormatter={(value) => `$${value}`}
                 />
@@ -173,7 +173,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice }: Pred
                   type="monotone" 
                   dataKey="price" 
                   stroke="#8b5cf6" 
-                  strokeWidth={3}
+                  strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorPrice)"
                   name="Predicted Price"
@@ -188,8 +188,8 @@ export default function PredictionPanel({ cardId, cardName, currentPrice }: Pred
               <h4 className="text-lg font-semibold text-gray-900 mb-4">AI Insights</h4>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Investment Rating</span>
-                  <span className={`px-4 py-2 rounded-full font-bold ${
+                  <span className="text-gray-700 font-medium">Investment Rating</span>
+                  <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${
                     prediction.insights.investment_rating === 'Strong Buy' 
                       ? 'bg-green-100 text-green-800'
                       : prediction.insights.investment_rating === 'Buy'
@@ -202,7 +202,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice }: Pred
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Investment Score</span>
+                  <span className="text-gray-700 font-medium">Investment Score</span>
                   <span className="font-bold text-purple-600">
                     {prediction.insights.investment_score}/10
                   </span>
@@ -229,4 +229,3 @@ export default function PredictionPanel({ cardId, cardName, currentPrice }: Pred
     </div>
   )
 }
-

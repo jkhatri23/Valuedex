@@ -1,38 +1,42 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import SearchBar from '@/components/SearchBar'
 import CardDisplay from '@/components/CardDisplay'
 import PriceChart from '@/components/PriceChart'
 import PredictionPanel from '@/components/PredictionPanel'
 import InvestmentRating from '@/components/InvestmentRating'
-import { Sparkles, TrendingUp, Search } from 'lucide-react'
+import { TrendingUp, Search } from 'lucide-react'
 
 export default function Home() {
   const [selectedCard, setSelectedCard] = useState<any>(null)
   const [cardDetails, setCardDetails] = useState<any>(null)
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+    <main className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#0d0d0d] to-[#121212]">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-gradient-to-b from-[#151515] via-[#121212] to-[#0f0f0f] shadow-sm border-b border-[#1f1f1f]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-xl">
-                <Sparkles className="w-8 h-8 text-white" />
+              <div className="bg-black p-3 rounded-xl">
+                <Image 
+                  src="/logo.png" 
+                  alt="Valuedex Logo" 
+                  width={32} 
+                  height={32}
+                  className="w-8 h-8"
+                />
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Pokedictor
+                <h1 className="text-3xl font-bold text-white">
+                  Valuedex
                 </h1>
-                <p className="text-gray-600 text-sm">AI-Powered Card Value Predictions</p>
+                <p className="text-white text-sm">AI-Powered Card Value Predictions</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <TrendingUp className="w-4 h-4" />
-              <span>Real-time Market Data</span>
-            </div>
+            
           </div>
         </div>
       </header>
@@ -41,31 +45,17 @@ export default function Home() {
       {!selectedCard && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12 animate-fade-in">
-            <h2 className="text-5xl font-bold text-gray-900 mb-4">
+            <h2 className="text-5xl font-bold text-white mb-4">
               Predict Your Card's Future Value
             </h2>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Using machine learning and historical market data, discover what your Pokemon cards could be worth in the future.
+            <p className="text-xl text-white mb-8 max-w-2xl mx-auto">
+              Using machine learning and historical market data, discover what your trading cards could be worth in the future.
             </p>
-            <div className="flex justify-center space-x-4 mb-12">
-              <div className="bg-white rounded-lg p-4 shadow-lg">
-                <div className="text-3xl font-bold text-blue-600">50K+</div>
-                <div className="text-sm text-gray-600">Cards Analyzed</div>
-              </div>
-              <div className="bg-white rounded-lg p-4 shadow-lg">
-                <div className="text-3xl font-bold text-purple-600">95%</div>
-                <div className="text-sm text-gray-600">Accuracy</div>
-              </div>
-              <div className="bg-white rounded-lg p-4 shadow-lg">
-                <div className="text-3xl font-bold text-pink-600">5yr</div>
-                <div className="text-sm text-gray-600">Predictions</div>
-              </div>
-            </div>
           </div>
 
           {/* Search Section */}
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 animate-slide-up overflow-visible">
+            <div className="bg-white rounded-2xl p-8 animate-slide-up overflow-visible">
               <div className="flex items-center space-x-3 mb-6">
                 <Search className="w-6 h-6 text-gray-400" />
                 <h3 className="text-2xl font-semibold text-gray-900">Search for a Card</h3>
@@ -124,14 +114,14 @@ export default function Home() {
       )}
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-20">
+      <footer className="bg-gradient-to-t from-[#151515] via-[#121212] to-[#0f0f0f] border-t border-[#1f1f1f] mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-600">
+          <div className="text-center text-white">
             <p className="mb-2">
               Data powered by PriceCharting API • Predictions by ML Models
             </p>
-            <p className="text-sm text-gray-500">
-              For entertainment and educational purposes only. Not financial advice.
+            <p className="text-sm text-white">
+              For entertainment and educational purposes only. Not financial advice. This site is not affiliated with, endorsed, or sponsored by The Pokémon Company International, Nintendo, or Game Freak.
             </p>
           </div>
         </div>
