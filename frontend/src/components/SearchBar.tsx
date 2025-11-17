@@ -1,95 +1,101 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { searchCards, Card } from '@/lib/api'
+import { useState, useEffect, useRef } from 'react'
+import { searchCards } from '@/lib/api'
 import { Search, Loader2 } from 'lucide-react'
 
 interface SearchBarProps {
-  onSelectCard: (card: Card) => void
+  onSelectCard: (card: any) => void
 }
 
 export default function SearchBar({ onSelectCard }: SearchBarProps) {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<Card[]>([])
+  const [results, setResults] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [showResults, setShowResults] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
+  // Close dropdown when clicking outside
   useEffect(() => {
-    const searchTimeout = setTimeout(async () => {
-      if (query.length > 1) {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Debounced search
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (query.length >= 2) {
         setIsLoading(true)
-        try {
-          const cards = await searchCards(query)
-          console.log('Search results:', cards)
-          setResults(cards || [])
-          setShowResults(true)
-        } catch (error) {
-          console.error('Error in search:', error)
-          setResults([])
-          setShowResults(false)
-        } finally {
-          setIsLoading(false)
-        }
+        const data = await searchCards(query)
+        setResults(data)
+        setIsLoading(false)
+        setIsOpen(true)
       } else {
         setResults([])
-        setShowResults(false)
+        setIsOpen(false)
       }
     }, 300)
 
-    return () => clearTimeout(searchTimeout)
+    return () => clearTimeout(delayDebounceFn)
   }, [query])
 
-  const handleSelectCard = (card: Card) => {
+  const handleSelectCard = (card: any) => {
     onSelectCard(card)
     setQuery('')
-    setShowResults(false)
+    setResults([])
+    setIsOpen(false)
   }
 
   return (
-    <div className="relative">
+    <div ref={wrapperRef} className="relative">
       <div className="relative">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search cards (e.g., Charizard, Base Set, set:Base Set)..."
-          className="w-full px-5 py-4 pl-12 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-gray-900 placeholder:text-gray-400 bg-white"
-        />
-        <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
           {isLoading ? (
             <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
           ) : (
             <Search className="w-5 h-5 text-gray-400" />
           )}
         </div>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search for Pokemon cards..."
+          className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400"
+        />
       </div>
 
-      {/* Search Results Dropdown */}
-      {showResults && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-96 overflow-y-auto">
-          {results.map((card, index) => (
+      {/* Results Dropdown */}
+      {isOpen && results.length > 0 && (
+        <div className="w-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 max-h-96 overflow-y-auto">
+          {results.map((card) => (
             <button
-              key={card.id || `card-${index}`}
+              key={card.id}
               onClick={() => handleSelectCard(card)}
-              className="w-full px-4 py-3 flex items-center space-x-4 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-b-0"
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
             >
-              {card.image_url && (
-                <img
-                  src={card.image_url}
-                  alt={card.name || 'Card'}
-                  className="w-12 h-16 object-cover rounded"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-              )}
-              <div className="flex-1">
-                <div className="font-semibold text-gray-900">{card.name || 'Unknown Card'}</div>
-                <div className="text-sm text-gray-600">{card.set_name || 'Unknown Set'}</div>
-              </div>
-              <div className="text-right">
-                <div className="font-bold text-blue-600">${(card.current_price || 0).toFixed(2)}</div>
-                <div className="text-xs text-gray-500">Current</div>
+              <div className="flex items-center space-x-3">
+                {card.image_url && (
+                  <img
+                    src={card.image_url}
+                    alt={card.name}
+                    className="w-12 h-16 object-cover rounded"
+                  />
+                )}
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">{card.name}</div>
+                  <div className="text-sm text-gray-500">{card.set_name}</div>
+                  {card.current_price > 0 && (
+                    <div className="text-sm font-semibold text-blue-600 mt-1">
+                      ${card.current_price.toFixed(2)}
+                    </div>
+                  )}
+                </div>
               </div>
             </button>
           ))}
@@ -97,12 +103,12 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
       )}
 
       {/* No Results */}
-      {showResults && query.length > 1 && results.length === 0 && !isLoading && (
-        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl p-4 text-center text-gray-600">
-          No cards found. Try a different search term.
+      {isOpen && query.length >= 2 && !isLoading && results.length === 0 && (
+        <div className="w-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 px-4 py-8 text-center">
+          <p className="text-gray-500">No cards found matching "{query}"</p>
+          <p className="text-sm text-gray-400 mt-2">Try a different search term</p>
         </div>
       )}
     </div>
   )
 }
-

@@ -8,6 +8,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-inconsolata)', 'monospace'],
+        mono: ['var(--font-inconsolata)', 'monospace'],
+      },
       colors: {
         primary: {
           50: '#fef2f2',

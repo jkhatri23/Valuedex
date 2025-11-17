@@ -22,15 +22,16 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
   if (!features) {
     return (
       <div className="card">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-          <p className="text-yellow-800 font-semibold mb-2">Investment Rating Not Available</p>
-          <p className="text-sm text-yellow-600">
+        <div className="bg-white/5 border border-white/10 rounded-lg p-6 text-center">
+          <p className="text-white font-semibold mb-2">Investment Rating Not Available</p>
+          <p className="text-sm text-white/70">
             Features are being calculated. Please check back later or refresh the page.
           </p>
         </div>
       </div>
     )
   }
+
   const getRatingColor = (rating: string) => {
     switch (rating) {
       case 'Strong Buy':
@@ -62,10 +63,10 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
   }
 
   return (
-    <div className="card animate-fade-in">
+    <div className="card">
       {/* Rating Header */}
       <div className={`bg-gradient-to-r ${getRatingColor(features.investment_rating)} rounded-lg p-6 text-white mb-6`}>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <Award className="w-8 h-8" />
             <div>
@@ -77,14 +78,14 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
         </div>
         
         {/* Score Bar */}
-        <div className="mt-4">
+        <div>
           <div className="flex justify-between text-sm mb-2">
             <span>Investment Score</span>
             <span className="font-bold">{features.investment_score}/10</span>
           </div>
-          <div className="w-full bg-white bg-opacity-30 rounded-full h-3">
+          <div className="w-full bg-white bg-opacity-30 rounded-full h-2">
             <div
-              className="bg-white rounded-full h-3 transition-all duration-500"
+              className="bg-white rounded-full h-2 transition-all duration-500"
               style={{ width: `${features.investment_score * 10}%` }}
             ></div>
           </div>
@@ -92,9 +93,9 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
       </div>
 
       {/* Rating Explanation */}
-      <div className="mb-6">
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">What This Means</h4>
-        <p className="text-sm text-gray-600">
+      <div className="mb-6 p-4 bg-white/5 border border-white/10 rounded-lg">
+        <h4 className="text-sm font-semibold text-white mb-2">What This Means</h4>
+        <p className="text-sm text-white/80">
           {features.investment_rating === 'Strong Buy' && 
             'This card shows exceptional growth potential with strong fundamentals across multiple factors.'}
           {features.investment_rating === 'Buy' && 
@@ -109,20 +110,20 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
       </div>
 
       {/* Key Factors */}
-      <div className="space-y-4">
-        <h4 className="text-sm font-semibold text-gray-700">Key Factors</h4>
+      <div className="space-y-4 mb-6">
+        <h4 className="text-sm font-semibold text-white">Key Factors</h4>
         
         {/* Popularity */}
         <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-600">Popularity</span>
+          <div className="flex justify-between text-sm mb-2">
+            <span className="text-white/70">Popularity</span>
             <span className={`font-semibold ${getScoreColor(features.popularity_score / 10)}`}>
               {features.popularity_score.toFixed(0)}/100
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-white/20 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-blue-400 to-purple-500 rounded-full h-2"
+              className="bg-gradient-to-r from-blue-400 to-purple-500 rounded-full h-2 transition-all duration-500"
               style={{ width: `${features.popularity_score}%` }}
             ></div>
           </div>
@@ -130,15 +131,15 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
 
         {/* Rarity */}
         <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-600">Rarity</span>
+          <div className="flex justify-between text-sm mb-2">
+            <span className="text-white/70">Rarity</span>
             <span className={`font-semibold ${getScoreColor(features.rarity_score)}`}>
               {features.rarity_score.toFixed(1)}/10
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-white/20 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full h-2"
+              className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full h-2 transition-all duration-500"
               style={{ width: `${features.rarity_score * 10}%` }}
             ></div>
           </div>
@@ -146,15 +147,15 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
 
         {/* Artist */}
         <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-600">Artist Reputation</span>
+          <div className="flex justify-between text-sm mb-2">
+            <span className="text-white/70">Artist Reputation</span>
             <span className={`font-semibold ${getScoreColor(features.artist_score)}`}>
               {features.artist_score.toFixed(1)}/10
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-white/20 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-pink-400 to-purple-500 rounded-full h-2"
+              className="bg-gradient-to-r from-pink-400 to-purple-500 rounded-full h-2 transition-all duration-500"
               style={{ width: `${features.artist_score * 10}%` }}
             ></div>
           </div>
@@ -162,39 +163,39 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
       </div>
 
       {/* Market Trends */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">Market Trends</h4>
+      <div className="pt-6 border-t border-white/10">
+        <h4 className="text-sm font-semibold text-white mb-4">Market Trends</h4>
         <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
-            <div className={`text-lg font-bold ${features.trend_30d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <div className="text-center p-3 bg-white/5 border border-white/10 rounded-lg">
+            <div className={`text-lg font-bold ${features.trend_30d >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {features.trend_30d >= 0 ? '+' : ''}{features.trend_30d.toFixed(1)}%
             </div>
-            <div className="text-xs text-gray-600">30 Days</div>
+            <div className="text-xs text-white/60 mt-1">30 Days</div>
           </div>
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
-            <div className={`text-lg font-bold ${features.trend_90d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <div className="text-center p-3 bg-white/5 border border-white/10 rounded-lg">
+            <div className={`text-lg font-bold ${features.trend_90d >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {features.trend_90d >= 0 ? '+' : ''}{features.trend_90d.toFixed(1)}%
             </div>
-            <div className="text-xs text-gray-600">90 Days</div>
+            <div className="text-xs text-white/60 mt-1">90 Days</div>
           </div>
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
-            <div className={`text-lg font-bold ${features.trend_1y >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <div className="text-center p-3 bg-white/5 border border-white/10 rounded-lg">
+            <div className={`text-lg font-bold ${features.trend_1y >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {features.trend_1y >= 0 ? '+' : ''}{features.trend_1y.toFixed(1)}%
             </div>
-            <div className="text-xs text-gray-600">1 Year</div>
+            <div className="text-xs text-white/60 mt-1">1 Year</div>
           </div>
         </div>
       </div>
 
       {/* Volatility */}
-      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+      <div className="mt-4 p-4 bg-white/5 border border-white/10 rounded-lg">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-700">Price Volatility</span>
-          <span className="text-sm font-semibold text-blue-600">
+          <span className="text-sm text-white">Price Volatility</span>
+          <span className="text-sm font-semibold text-blue-300">
             {features.volatility.toFixed(1)}%
           </span>
         </div>
-        <p className="text-xs text-gray-600 mt-2">
+        <p className="text-xs text-white/70 mt-2">
           {features.volatility < 10 && 'Low volatility - stable investment'}
           {features.volatility >= 10 && features.volatility < 25 && 'Moderate volatility - balanced risk/reward'}
           {features.volatility >= 25 && 'High volatility - higher risk but potential for gains'}
@@ -203,4 +204,3 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
     </div>
   )
 }
-
