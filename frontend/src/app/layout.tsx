@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inconsolata } from 'next/font/google'
 import './globals.css'
+import { ThemeProvider } from '@/components/ThemeProvider'
 
 const inconsolata = Inconsolata({
   subsets: ['latin'],
@@ -23,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={inconsolata.variable}>
       <body className={inconsolata.className}>
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   )

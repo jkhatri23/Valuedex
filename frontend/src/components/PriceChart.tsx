@@ -53,13 +53,13 @@ export default function PriceChart({ cardId }: PriceChartProps) {
           ) : (
             <TrendingDown className="w-6 h-6 text-red-600" />
           )}
-          <h3 className="text-2xl font-bold text-white">Price History</h3>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Price History</h3>
         </div>
         <div className="text-right">
           <div className={`text-2xl font-bold ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {priceChange >= 0 ? '+' : ''}{priceChangePercent.toFixed(1)}%
           </div>
-          <div className="text-sm text-white/70">12 Month Change</div>
+          <div className="text-sm text-gray-600 dark:text-white/70">12 Month Change</div>
         </div>
       </div>
 
@@ -98,21 +98,21 @@ export default function PriceChart({ cardId }: PriceChartProps) {
         </LineChart>
       </ResponsiveContainer>
 
-      <div className="mt-6 pt-4 border-t border-white/10">
+      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
-            <div className="text-2xl font-bold text-white">${firstPrice.toFixed(2)}</div>
-            <div className="text-sm text-white/70 mt-1">12 Months Ago</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">${firstPrice.toFixed(2)}</div>
+            <div className="text-sm text-gray-600 dark:text-white/70 mt-1">12 Months Ago</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-blue-600">${lastPrice.toFixed(2)}</div>
-            <div className="text-sm text-white/70 mt-1">Current Price</div>
+            <div className="text-sm text-gray-600 dark:text-white/70 mt-1">Current Price</div>
           </div>
           <div>
             <div className={`text-2xl font-bold ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {priceChange >= 0 ? '+' : ''}${Math.abs(priceChange).toFixed(2)}
             </div>
-            <div className="text-sm text-white/70 mt-1">Change</div>
+            <div className="text-sm text-gray-600 dark:text-white/70 mt-1">Change</div>
           </div>
         </div>
       </div>
