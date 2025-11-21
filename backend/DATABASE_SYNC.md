@@ -16,6 +16,7 @@ Make sure your `.env` file has the PostgreSQL connection string:
 
 ```env
 DATABASE_URL=postgresql://user:password@host:port/database
+PRICE_DATABASE_URL=sqlite:///./pricepoints.db
 PRICECHARTING_API_KEY=your_pokemontcg_api_key_here
 ```
 
@@ -34,6 +35,7 @@ This will:
 - Fetch all cards from pokemontcg.io API
 - Save them to your PostgreSQL database
 - Extract prices from TCGPlayer and Cardmarket
+- Write price points into the dedicated price database (`PRICE_DATABASE_URL`, defaults to `pricepoints.db`)
 - Take approximately 10-30 minutes depending on your connection
 
 **Example output:**
@@ -48,7 +50,7 @@ Time: 1200.00 seconds
 
 ### Automatic Updates
 
-The system automatically updates the database **daily at 2 AM UTC** using APScheduler.
+The system automatically updates both the primary card database and the price-point database **daily at 2 AM UTC** using APScheduler.
 
 To change the update time, edit `backend/app/main.py`:
 
