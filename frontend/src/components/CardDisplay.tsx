@@ -83,9 +83,9 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
         </div>
 
         {/* Price */}
-        <div className="rounded-lg p-5 border bg-gradient-to-r from-blue-50 to-purple-50 border-blue-100 dark:bg-white/5 dark:border-white/10">
-          <div className="text-sm text-gray-600 dark:text-white/70 mb-1">Current Market Price</div>
-          <div className="text-4xl font-bold text-blue-600 dark:text-blue-300">
+        <div className="rounded-lg p-5 border bg-gradient-to-r from-blue-50 to-purple-50 border-blue-100 dark:bg-[#050505] dark:bg-none dark:border-white/20 dark:shadow-inner">
+          <div className="text-sm text-gray-600 dark:text-white mb-1">Current Market Price</div>
+          <div className="text-4xl font-bold text-blue-600 dark:text-white">
             ${details.current_price.toFixed(2)}
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
                 href={details.tcgplayer_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-lg transition-colors group dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10"
+                className="flex items-center justify-between w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-lg transition-colors group dark:bg-[#050505] dark:hover:bg-[#0b0b0b] dark:border-white/15 dark:text-white"
               >
                 <span className="text-sm font-medium text-blue-900 dark:text-white">View on TCGPlayer</span>
                 <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-300 group-hover:translate-x-1 transition-transform" />
@@ -144,7 +144,7 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
                 href={details.ebay_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between w-full px-4 py-3 bg-yellow-50 hover:bg-yellow-100 border border-yellow-100 rounded-lg transition-colors group dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10"
+                className="flex items-center justify-between w-full px-4 py-3 bg-yellow-50 hover:bg-yellow-100 border border-yellow-100 rounded-lg transition-colors group dark:bg-[#050505] dark:hover:bg-[#0b0b0b] dark:border-white/15 dark:text-white"
               >
                 <span className="text-sm font-medium text-yellow-900 dark:text-white">View on eBay</span>
                 <ExternalLink className="w-4 h-4 text-yellow-500 dark:text-yellow-200 group-hover:translate-x-1 transition-transform" />
