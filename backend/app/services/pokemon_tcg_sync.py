@@ -10,7 +10,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from app.database import SessionLocal
+from app.price_database import PriceSessionLocal
 from app.models.card import Card, PriceHistory
+from app.models.price_point import PricePoint
 from app.config import get_settings
 
 settings = get_settings()
@@ -104,7 +106,33 @@ class PokemonTCGSync:
             print(f"[SYNC] Error extracting price: {e}")
             return 0.0
     
-    def save_card_to_db(self, card_data: Dict, db: Session) -> Optional[Card]:
+    def _record_price_point(
+        self,
+        price_db: Session,
+        card_external_id: str,
+        price: float,
+        price_type: str = "loose",
+        volume: Optional[int] = None,
+        source: str = "pokemontcg_api",
+    ):
+        if not price_db or price is None or price <= 0 or not card_external_id:
+            return
+
+        try:
+            price_point = PricePoint(
+                card_external_id=card_external_id,
+                price_type=price_type,
+                price=price,
+                volume=volume,
+                source=source,
+                collected_at=datetime.utcnow(),
+            )
+            price_db.add(price_point)
+        except Exception as e:
+            price_db.rollback()
+            print(f"[SYNC] Error recording price point for {card_external_id}: {e}")
+
+    def save_card_to_db(self, card_data: Dict, db: Session, price_db: Optional[Session] = None) -> Optional[Card]:
         """Save or update a single card in the database"""
         try:
             external_id = card_data.get("id")
@@ -169,6 +197,14 @@ class PokemonTCGSync:
                         # Update today's price if different
                         existing_price.price_loose = current_price
                         existing_price.date = datetime.now()
+
+                if price_db and current_price > 0:
+                    self._record_price_point(
+                        price_db,
+                        external_id,
+                        current_price,
+                        volume=0,
+                    )
                 
                 return existing_card
             else:
@@ -199,6 +235,14 @@ class PokemonTCGSync:
                         source="pokemontcg_api"
                     )
                     db.add(price_record)
+
+                    if price_db:
+                        self._record_price_point(
+                            price_db,
+                            external_id,
+                            current_price,
+                            volume=0,
+                        )
                 
                 return new_card
                 
@@ -226,6 +270,7 @@ class PokemonTCGSync:
             return {"success": False, "message": "No cards fetched"}
         
         db = SessionLocal()
+        price_db = PriceSessionLocal()
         saved_count = 0
         updated_count = 0
         error_count = 0
@@ -236,7 +281,7 @@ class PokemonTCGSync:
                     Card.external_id == card_data.get("id")
                 ).first()
                 
-                result = self.save_card_to_db(card_data, db)
+                result = self.save_card_to_db(card_data, db, price_db)
                 
                 if result:
                     if existing_card:
@@ -249,11 +294,13 @@ class PokemonTCGSync:
                 # Commit in batches for better performance
                 if i % batch_size == 0:
                     db.commit()
+                    price_db.commit()
                     print(f"[SYNC] Processed {i}/{len(all_cards)} cards... "
                           f"(Saved: {saved_count}, Updated: {updated_count}, Errors: {error_count})")
             
             # Final commit
             db.commit()
+            price_db.commit()
             
             elapsed = time.time() - start_time
             print(f"[SYNC] ✅ Database population complete!")
@@ -274,10 +321,12 @@ class PokemonTCGSync:
             
         except Exception as e:
             db.rollback()
+            price_db.rollback()
             print(f"[SYNC] ❌ Error during population: {e}")
             return {"success": False, "message": str(e)}
         finally:
             db.close()
+            price_db.close()
     
     def update_database(self, batch_size: int = 100) -> Dict:
         """
@@ -295,6 +344,7 @@ class PokemonTCGSync:
             return {"success": False, "message": "No cards fetched"}
         
         db = SessionLocal()
+        price_db = PriceSessionLocal()
         saved_count = 0
         updated_count = 0
         error_count = 0
@@ -305,7 +355,7 @@ class PokemonTCGSync:
                     Card.external_id == card_data.get("id")
                 ).first()
                 
-                result = self.save_card_to_db(card_data, db)
+                result = self.save_card_to_db(card_data, db, price_db)
                 
                 if result:
                     if existing_card:
@@ -318,11 +368,13 @@ class PokemonTCGSync:
                 # Commit in batches
                 if i % batch_size == 0:
                     db.commit()
+                    price_db.commit()
                     print(f"[SYNC] Processed {i}/{len(all_cards)} cards... "
                           f"(Saved: {saved_count}, Updated: {updated_count}, Errors: {error_count})")
             
             # Final commit
             db.commit()
+            price_db.commit()
             
             elapsed = time.time() - start_time
             print(f"[SYNC] ✅ Daily update complete!")
@@ -343,10 +395,12 @@ class PokemonTCGSync:
             
         except Exception as e:
             db.rollback()
+            price_db.rollback()
             print(f"[SYNC] ❌ Error during update: {e}")
             return {"success": False, "message": str(e)}
         finally:
             db.close()
+            price_db.close()
 
 
 # Global instance

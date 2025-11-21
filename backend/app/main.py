@@ -5,6 +5,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from app.api import cards, predictions, admin
 from app.database import engine, Base
+from app.price_database import price_engine, PriceBase
 from app.services.pokemon_tcg_sync import pokemon_tcg_sync
 import logging
 
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+PriceBase.metadata.create_all(bind=price_engine)
 
 # Setup scheduler
 scheduler = BackgroundScheduler()
