@@ -42,10 +42,19 @@ export interface CardDetails {
   }
 }
 
+export type CardCondition =
+  | 'Near Mint'
+  | 'PSA 6'
+  | 'PSA 7'
+  | 'PSA 8'
+  | 'PSA 9'
+  | 'PSA 10'
+
 export interface PriceHistory {
   date: string
   price: number
   volume?: number
+  grade?: string | null
 }
 
 export interface Prediction {
@@ -95,9 +104,14 @@ export const getCardDetails = async (cardId: string): Promise<CardDetails | null
   }
 }
 
-export const getPriceHistory = async (cardId: string): Promise<PriceHistory[]> => {
+export const getPriceHistory = async (
+  cardId: string,
+  condition?: CardCondition
+): Promise<PriceHistory[]> => {
   try {
-    const response = await api.get(`/api/cards/${cardId}/prices`)
+    const response = await api.get(`/api/cards/${cardId}/prices`, {
+      params: condition ? { grade: condition } : {},
+    })
     return response.data.prices
   } catch (error) {
     console.error('Error fetching price history:', error)

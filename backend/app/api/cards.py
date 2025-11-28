@@ -3,11 +3,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 from typing import List, Optional, Dict
 from datetime import datetime, timedelta
+from urllib.parse import quote_plus
 import random
 import asyncio
 
 from app.database import get_db, SessionLocal
 from app.models.card import Card, PriceHistory, CardFeature
+from app.models.price_point import PricePoint as PricePointModel
+from app.price_database import get_price_db
 from app.services.pricecharting import pricecharting_service
 from app.services.features import feature_service
 from pydantic import BaseModel
@@ -41,6 +44,7 @@ class PricePoint(BaseModel):
     date: str
     price: float
     volume: Optional[int] = None
+    grade: Optional[str] = None
 
 @router.get("/search")
 async def search_cards(
@@ -290,6 +294,15 @@ async def get_card_detail(card_id: str, db: Session = Depends(get_db)):
             except:
                 release_year = _extract_year(card_data.get("console-name", ""))
         
+        tcgplayer_url = card_data.get("tcgplayer_url") or _build_tcgplayer_url(
+            card_data.get("product-name"),
+            card_data.get("console-name")
+        )
+        ebay_url = card_data.get("ebay_url") or _build_ebay_url(
+            card_data.get("product-name"),
+            card_data.get("console-name")
+        )
+
         card = Card(
             external_id=card_id,
             name=card_data.get("product-name"),
@@ -299,8 +312,8 @@ async def get_card_detail(card_id: str, db: Session = Depends(get_db)):
             release_year=release_year or _extract_year(card_data.get("console-name", "")),
             card_number=card_data.get("number"),
             image_url=card_data.get("image"),
-            tcgplayer_url=f"https://shop.tcgplayer.com/pokemon/{card_data.get('product-name', '').replace(' ', '-')}",
-            ebay_url=f"https://www.ebay.com/sch/i.html?_nkw=pokemon+{card_data.get('product-name', '').replace(' ', '+')}"
+            tcgplayer_url=tcgplayer_url,
+            ebay_url=ebay_url
         )
         db.add(card)
         db.commit()
@@ -329,6 +342,9 @@ async def get_card_detail(card_id: str, db: Session = Depends(get_db)):
     # Get features
     features = db.query(CardFeature).filter(CardFeature.card_id == card.id).first()
     
+    tcgplayer_url = card.tcgplayer_url or _build_tcgplayer_url(card.name, card.set_name)
+    ebay_url = card.ebay_url or _build_ebay_url(card.name, card.set_name)
+
     return {
         "id": card.id,
         "external_id": card.external_id,
@@ -339,8 +355,8 @@ async def get_card_detail(card_id: str, db: Session = Depends(get_db)):
         "release_year": card.release_year,
         "card_number": card.card_number,
         "image_url": card.image_url,
-        "tcgplayer_url": card.tcgplayer_url,
-        "ebay_url": card.ebay_url,
+        "tcgplayer_url": tcgplayer_url,
+        "ebay_url": ebay_url,
         "current_price": features.current_price if features else 0,
         "features": {
             "popularity_score": features.popularity_score,
@@ -356,29 +372,65 @@ async def get_card_detail(card_id: str, db: Session = Depends(get_db)):
     }
 
 @router.get("/{card_id}/prices")
-async def get_price_history(card_id: str, db: Session = Depends(get_db)):
-    """Get price history for a card"""
-    
+async def get_price_history(
+    card_id: str,
+    db: Session = Depends(get_db),
+    price_db: Session = Depends(get_price_db),
+    grade: Optional[str] = None,
+):
+    """
+    Get price history for a card.
+
+    - Without a grade: returns the traditional loose-price history from the main DB.
+    - With a grade (e.g. 'Near Mint', 'PSA 9'): returns grade-specific prices from
+      the price_points database, sorted chronologically.
+    """
+
     card = db.query(Card).filter(Card.external_id == card_id).first()
-    
+
     if not card:
         # Try to get card detail first (will create it)
         await get_card_detail(card_id, db)
         card = db.query(Card).filter(Card.external_id == card_id).first()
-    
-    prices = db.query(PriceHistory).filter(
-        PriceHistory.card_id == card.id
-    ).order_by(PriceHistory.date.asc()).all()
-    
-    price_points = [
-        {
-            "date": p.date.isoformat(),
-            "price": p.price_loose or 0,
-            "volume": p.volume
-        }
-        for p in prices
-    ]
-    
+
+    if grade:
+        # Grade-specific history from price_points DB only.
+        # If there are no grade-specific rows, we return an empty array
+        # rather than falling back to loose prices.
+        query = price_db.query(PricePointModel).filter(
+            PricePointModel.card_external_id == card.external_id,
+            PricePointModel.grade == grade,
+        )
+        points = query.order_by(PricePointModel.collected_at.asc()).all()
+
+        price_points = [
+            {
+                "date": p.collected_at.isoformat(),
+                "price": p.price or 0,
+                "volume": p.volume,
+                "grade": p.grade,
+            }
+            for p in points
+        ]
+    else:
+        # Default loose-price history from main DB
+        prices = (
+            db.query(PriceHistory)
+            .filter(PriceHistory.card_id == card.id)
+            .order_by(PriceHistory.date.asc())
+            .all()
+        )
+
+        price_points = [
+            {
+                "date": p.date.isoformat(),
+                "price": p.price_loose or 0,
+                "volume": p.volume,
+                "grade": None,
+            }
+            for p in prices
+        ]
+
     return {"card_id": card_id, "prices": price_points}
 
 @router.get("/{card_id}/rating")
@@ -448,5 +500,21 @@ def _extract_year(set_name: str) -> int:
     elif "fossil" in set_name.lower() or "jungle" in set_name.lower():
         return 2000
     return random.randint(2018, 2024)
+
+
+def _build_tcgplayer_url(card_name: Optional[str], set_name: Optional[str] = None) -> str:
+    """Create a TCGplayer search URL for the given card"""
+    query_parts = [card_name or "", set_name or ""]
+    query = " ".join(part for part in query_parts if part).strip() or "pokemon card"
+    encoded = quote_plus(query)
+    return f"https://www.tcgplayer.com/search/pokemon/product?q={encoded}&productLineName=pokemon"
+
+
+def _build_ebay_url(card_name: Optional[str], set_name: Optional[str] = None) -> str:
+    """Create an eBay search URL for the given card"""
+    query_parts = [card_name or "", set_name or "", "pokemon card"]
+    query = " ".join(part for part in query_parts if part).strip()
+    encoded = quote_plus(query or "pokemon card")
+    return f"https://www.ebay.com/sch/i.html?_nkw={encoded}"
 
 

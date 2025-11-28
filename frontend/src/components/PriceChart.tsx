@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getPriceHistory, PriceHistory } from '@/lib/api'
+import { getPriceHistory, PriceHistory, CardCondition } from '@/lib/api'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { TrendingUp, TrendingDown, Loader2 } from 'lucide-react'
 
@@ -12,22 +12,75 @@ interface PriceChartProps {
 export default function PriceChart({ cardId }: PriceChartProps) {
   const [priceData, setPriceData] = useState<PriceHistory[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [condition, setCondition] = useState<CardCondition | 'All'>('All')
 
   useEffect(() => {
     const fetchPrices = async () => {
       setIsLoading(true)
-      const data = await getPriceHistory(cardId)
+      const data = await getPriceHistory(
+        cardId,
+        condition === 'All' ? undefined : condition
+      )
       setPriceData(data)
       setIsLoading(false)
     }
 
     fetchPrices()
-  }, [cardId])
+  }, [cardId, condition])
 
   if (isLoading) {
     return (
       <div className="card flex items-center justify-center h-96">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
+
+  // If there's no data for this selection, show a friendly message instead of
+  // trying to reuse loose history.
+  if (!isLoading && priceData.length === 0) {
+    return (
+      <div className="card">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Price History
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-white/60">
+              {condition === 'All'
+                ? 'Loose / market price trend'
+                : `Condition: ${condition}`}
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-medium text-gray-600 dark:text-white/70">
+              Condition
+            </span>
+            <select
+              value={condition}
+              onChange={(e) =>
+                setCondition(e.target.value as CardCondition | 'All')
+              }
+              className="text-sm px-3 py-1.5 rounded-md border border-gray-300 bg-white dark:bg-[#111] dark:border-white/20 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="All">All / Loose</option>
+              <option value="Near Mint">Near Mint</option>
+              <option value="PSA 6">PSA 6</option>
+              <option value="PSA 7">PSA 7</option>
+              <option value="PSA 8">PSA 8</option>
+              <option value="PSA 9">PSA 9</option>
+              <option value="PSA 10">PSA 10</option>
+            </select>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-gray-600 dark:text-white/70 font-medium mb-2">
+            No price data available for this condition yet.
+          </p>
+          <p className="text-sm text-gray-500 dark:text-white/60">
+            Try a different condition, or select All / Loose.
+          </p>
+        </div>
       </div>
     )
   }
@@ -53,13 +106,51 @@ export default function PriceChart({ cardId }: PriceChartProps) {
           ) : (
             <TrendingDown className="w-6 h-6 text-red-600" />
           )}
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Price History</h3>
-        </div>
-        <div className="text-right">
-          <div className={`text-2xl font-bold ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {priceChange >= 0 ? '+' : ''}{priceChangePercent.toFixed(1)}%
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Price History
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-white/60">
+              {condition === 'All'
+                ? 'Loose / market price trend'
+                : `Condition: ${condition}`}
+            </p>
           </div>
-          <div className="text-sm text-gray-600 dark:text-white/70">12 Month Change</div>
+        </div>
+        <div className="flex items-center space-x-6">
+          <div className="hidden sm:block text-right">
+            <div
+              className={`text-2xl font-bold ${
+                priceChange >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}
+            >
+              {priceChange >= 0 ? '+' : ''}
+              {priceChangePercent.toFixed(1)}%
+            </div>
+            <div className="text-sm text-gray-600 dark:text-white/70">
+              12 Month Change
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-medium text-gray-600 dark:text-white/70">
+              Condition
+            </span>
+            <select
+              value={condition}
+              onChange={(e) =>
+                setCondition(e.target.value as CardCondition | 'All')
+              }
+              className="text-sm px-3 py-1.5 rounded-md border border-gray-300 bg-white dark:bg-[#111] dark:border-white/20 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="All">All / Loose</option>
+              <option value="Near Mint">Near Mint</option>
+              <option value="PSA 6">PSA 6</option>
+              <option value="PSA 7">PSA 7</option>
+              <option value="PSA 8">PSA 8</option>
+              <option value="PSA 9">PSA 9</option>
+              <option value="PSA 10">PSA 10</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -101,18 +192,33 @@ export default function PriceChart({ cardId }: PriceChartProps) {
       <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">${firstPrice.toFixed(2)}</div>
-            <div className="text-sm text-gray-600 dark:text-white/70 mt-1">12 Months Ago</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-blue-600">${lastPrice.toFixed(2)}</div>
-            <div className="text-sm text-gray-600 dark:text-white/70 mt-1">Current Price</div>
-          </div>
-          <div>
-            <div className={`text-2xl font-bold ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {priceChange >= 0 ? '+' : ''}${Math.abs(priceChange).toFixed(2)}
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              ${firstPrice.toFixed(2)}
             </div>
-            <div className="text-sm text-gray-600 dark:text-white/70 mt-1">Change</div>
+            <div className="text-sm text-gray-600 dark:text-white/70 mt-1">
+              12 Months Ago
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-blue-600">
+              ${lastPrice.toFixed(2)}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-white/70 mt-1">
+              Current Price
+            </div>
+          </div>
+          <div>
+            <div
+              className={`text-2xl font-bold ${
+                priceChange >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}
+            >
+              {priceChange >= 0 ? '+' : ''}
+              ${Math.abs(priceChange).toFixed(2)}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-white/70 mt-1">
+              Change
+            </div>
           </div>
         </div>
       </div>

@@ -14,6 +14,9 @@ from app.price_database import PriceSessionLocal
 from app.models.card import Card, PriceHistory
 from app.models.price_point import PricePoint
 from app.config import get_settings
+from app.services.ebay import ebay_price_service
+from app.services.grades import normalize_grade, grade_rank
+from app.services.pricepoints_migrations import ensure_pricepoints_grade_columns
 
 settings = get_settings()
 
@@ -80,6 +83,8 @@ class PokemonTCGSync:
     def extract_price(self, card: Dict) -> float:
         """Extract market price from card data"""
         try:
+            card_name = card.get("name", "")
+            set_name = card.get("set", {}).get("name")
             # Try TCGPlayer prices first (US market)
             if "tcgplayer" in card and "prices" in card["tcgplayer"]:
                 prices = card["tcgplayer"]["prices"]
@@ -100,6 +105,11 @@ class PokemonTCGSync:
                     return round(float(prices["averageSellPrice"]), 2)
                 elif "trendPrice" in prices and prices["trendPrice"]:
                     return round(float(prices["trendPrice"]), 2)
+
+            # Fallback to eBay sold listings
+            ebay_price = ebay_price_service.get_average_price(card_name, set_name)
+            if ebay_price:
+                return ebay_price
             
             return 0.0
         except Exception as e:
@@ -114,17 +124,23 @@ class PokemonTCGSync:
         price_type: str = "loose",
         volume: Optional[int] = None,
         source: str = "pokemontcg_api",
+        grade: Optional[str] = None,
     ):
         if not price_db or price is None or price <= 0 or not card_external_id:
             return
 
         try:
+            normalized_grade = normalize_grade(grade) if grade else None
+            rank = grade_rank(normalized_grade) if normalized_grade else None
+
             price_point = PricePoint(
                 card_external_id=card_external_id,
                 price_type=price_type,
                 price=price,
                 volume=volume,
                 source=source,
+                grade=normalized_grade,
+                grade_rank=rank,
                 collected_at=datetime.utcnow(),
             )
             price_db.add(price_point)
@@ -260,6 +276,8 @@ class PokemonTCGSync:
         This is the initial population - can take a while!
         """
         print(f"[SYNC] Starting database population...")
+        # Ensure price_points table has grade / grade_rank columns before we write.
+        ensure_pricepoints_grade_columns()
         start_time = time.time()
         
         # Fetch all cards
@@ -334,6 +352,8 @@ class PokemonTCGSync:
         This is the daily update job - faster than full population.
         """
         print(f"[SYNC] Starting daily database update...")
+        # Ensure price_points table has grade / grade_rank columns before we write.
+        ensure_pricepoints_grade_columns()
         start_time = time.time()
         
         # Fetch all cards (API will return latest data)

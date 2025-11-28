@@ -14,16 +14,23 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.services.pokemon_tcg_sync import pokemon_tcg_sync
+from app.services.pricepoints_migrations import normalize_existing_pricepoints
 
 if __name__ == "__main__":
     print("=" * 60)
     print("Pokemon TCG Database Update Script")
     print("=" * 60)
     print()
-    
+
     result = pokemon_tcg_sync.update_database()
-    
+
     if result.get("success"):
+        # Normalize and rank any existing price points by grade quality so they
+        # can be sorted consistently (Near Mint -> PSA 10).
+        normalized_count = normalize_existing_pricepoints()
+        if normalized_count:
+            print(f"\nNormalized {normalized_count} price points with grade ordering.")
+
         print()
         print("=" * 60)
         print("✅ Database update successful!")
