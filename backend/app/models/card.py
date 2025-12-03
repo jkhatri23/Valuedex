@@ -82,6 +82,7 @@ class CardFeature(Base):
     trend_30d = Column(Float)  # % change last 30 days
     trend_90d = Column(Float)
     trend_1y = Column(Float)
+    market_sentiment = Column(Float, default=50.0)  # Google Trends sentiment (0-100)
     
     # Investment score (calculated)
     investment_score = Column(Float)  # 1-10 rating

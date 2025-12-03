@@ -1,6 +1,12 @@
 from typing import Dict
 import random
+
 from app.models.card import Card, CardFeature
+from app.services.feature_migrations import ensure_card_features_sentiment_column
+from app.services.sentiment import sentiment_service
+
+# Ensure DB column exists at import time
+ensure_card_features_sentiment_column()
 
 class FeatureService:
     """Calculate features for ML model and investment ratings"""
@@ -93,7 +99,8 @@ class FeatureService:
         trend_30d: float,
         trend_90d: float,
         trend_1y: float,
-        volatility: float
+        volatility: float,
+        market_sentiment: float,
     ) -> tuple[float, str]:
         """
         Calculate investment score (1-10) and rating
@@ -122,6 +129,10 @@ class FeatureService:
             score += 0.5
         elif trend_90d < -5:
             score -= 0.5
+        
+        # Sentiment factor (market buzz can drive demand)
+        sentiment_normalized = (market_sentiment - 50) / 50  # -1 to 1 range
+        score += sentiment_normalized * 1.2
         
         # Volatility (moderate volatility is good for growth)
         if 10 < volatility < 25:
@@ -171,6 +182,9 @@ class FeatureService:
         trend_1y = random.uniform(0, 30)
         volatility = random.uniform(5, 25)
         
+        # Market sentiment via Google Trends
+        market_sentiment = sentiment_service.get_sentiment_score(card.name or card.set_name)
+        
         # Calculate investment score
         investment_score, investment_rating = self.calculate_investment_score(
             current_price=current_price,
@@ -180,7 +194,8 @@ class FeatureService:
             trend_30d=trend_30d,
             trend_90d=trend_90d,
             trend_1y=trend_1y,
-            volatility=volatility
+            volatility=volatility,
+            market_sentiment=market_sentiment,
         )
         
         return {
@@ -192,6 +207,7 @@ class FeatureService:
             "trend_30d": trend_30d,
             "trend_90d": trend_90d,
             "trend_1y": trend_1y,
+            "market_sentiment": market_sentiment,
             "investment_score": investment_score,
             "investment_rating": investment_rating,
         }

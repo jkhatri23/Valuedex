@@ -98,6 +98,7 @@ class PricePredictor:
         popularity_score = features.get('popularity_score', 50)
         artist_score = features.get('artist_score', 5)
         trend_1y = features.get('trend_1y', 5)
+        market_sentiment = features.get('market_sentiment', 50)
         
         # Base annual growth rate (%)
         base_growth = 5.0
@@ -108,7 +109,16 @@ class PricePredictor:
         artist_boost = (artist_score / 10) * 2  # Up to 2% boost
         trend_boost = min(trend_1y / 10, 5)  # Up to 5% boost
         
-        annual_growth_rate = base_growth + rarity_boost + popularity_boost + artist_boost + trend_boost
+        sentiment_boost = ((market_sentiment - 50) / 50) * 3  # +/-3% based on sentiment
+        
+        annual_growth_rate = (
+            base_growth
+            + rarity_boost
+            + popularity_boost
+            + artist_boost
+            + trend_boost
+            + sentiment_boost
+        )
         
         # Apply compound growth
         growth_multiplier = (1 + annual_growth_rate / 100) ** years_ahead

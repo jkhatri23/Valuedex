@@ -366,6 +366,7 @@ async def get_card_detail(card_id: str, db: Session = Depends(get_db)):
             "trend_90d": features.trend_90d,
             "trend_1y": features.trend_1y,
             "volatility": features.price_volatility,
+            "market_sentiment": features.market_sentiment,
             "investment_score": features.investment_score,
             "investment_rating": features.investment_rating
         } if features else None

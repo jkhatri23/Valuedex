@@ -1,4 +1,6 @@
+import base64
 import logging
+import time
 from typing import Optional, List
 
 import requests
@@ -11,81 +13,134 @@ logger = logging.getLogger(__name__)
 
 class EbayPriceService:
     """
-    Lightweight client around eBay Finding Service (sandbox) to fetch recent sold prices.
-    Uses findCompletedItems to estimate an average market value for a search query.
+    Lightweight client around eBay's Browse API to estimate market value for
+    card/grade combinations.
+
+    We previously used the legacy Finding API, but eBay now recommends Browse as the
+    alternative. This client:
+      - Fetches an OAuth client-credentials token
+      - Calls /buy/browse/v1/item_summary/search with the query
+      - Computes a trimmed mean of returned listing prices
     """
 
-    BASE_URL = "https://svcs.ebay.com/services/search/FindingService/v1"
-    SERVICE_VERSION = "1.13.0"
+    BROWSE_BASE_URL = "https://api.ebay.com"
+    OAUTH_TOKEN_URL = "https://api.ebay.com/identity/v1/oauth2/token"
+    OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope"
 
     def __init__(self):
         settings = get_settings()
         self.app_id = settings.ebay_app_id
+        self.cert_id = settings.ebay_cert_id
         self.enabled = bool(self.app_id)
+        self._access_token: Optional[str] = None
+        self._token_expiry: float = 0.0
 
-    def _build_params(self, query: str) -> dict:
-        return {
-            "OPERATION-NAME": "findCompletedItems",
-            "SERVICE-VERSION": self.SERVICE_VERSION,
-            "SECURITY-APPNAME": self.app_id,
-            "RESPONSE-DATA-FORMAT": "JSON",
-            "REST-PAYLOAD": "",
-            "keywords": query,
-            "itemFilter(0).name": "SoldItemsOnly",
-            "itemFilter(0).value": "true",
-            "itemFilter(1).name": "Condition",
-            "itemFilter(1).value": "Used",
-            "paginationInput.entriesPerPage": "25",
-            "categoryId": "183454",  # Pokemon TCG cards
+        if self.enabled and not self.cert_id:
+            logger.warning("EBAY_APP_ID is set but EBAY_CERT_ID is missing; Browse API calls will fail.")
+
+    # ------------------------------------------------------------------ #
+    # OAuth helpers
+    # ------------------------------------------------------------------ #
+    def _get_access_token(self) -> Optional[str]:
+        """Fetch (or reuse) an OAuth token for the Browse API."""
+        if not self.enabled or not self.cert_id:
+            return None
+
+        if self._access_token and time.time() < self._token_expiry:
+            return self._access_token
+
+        basic = base64.b64encode(f"{self.app_id}:{self.cert_id}".encode()).decode()
+        headers = {
+            "Authorization": f"Basic {basic}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+        data = {
+            "grant_type": "client_credentials",
+            "scope": self.OAUTH_SCOPE,
         }
 
-    def _extract_prices(self, response_json: dict) -> List[float]:
         try:
-            items = (
-                response_json["findCompletedItemsResponse"][0]
-                ["searchResult"][0]["item"]
-            )
-        except (KeyError, IndexError, TypeError):
+            resp = requests.post(self.OAUTH_TOKEN_URL, headers=headers, data=data, timeout=10)
+            resp.raise_for_status()
+            payload = resp.json()
+            token = payload.get("access_token")
+            expires_in = payload.get("expires_in", 0)
+            if token:
+                self._access_token = token
+                self._token_expiry = time.time() + max(int(expires_in) - 60, 0)
+                return token
+        except Exception as exc:
+            logger.error("Failed to obtain eBay OAuth token: %s", exc)
+            self._access_token = None
+            self._token_expiry = 0
+
+        return None
+
+    # ------------------------------------------------------------------ #
+    # Browse search helpers
+    # ------------------------------------------------------------------ #
+    def _search_browse_api(self, query: str) -> List[float]:
+        """Call Browse search endpoint and return a list of price floats (USD)."""
+        token = self._get_access_token()
+        if not token:
             return []
 
-        prices: List[float] = []
-        for item in items:
-            try:
-                price_str = (
-                    item["sellingStatus"][0]["currentPrice"][0]["__value__"]
-                )
-                prices.append(float(price_str))
-            except (KeyError, IndexError, TypeError, ValueError):
-                continue
-        return prices
+        params = {
+            "q": query,
+            "limit": "50",
+            "sort": "-price",
+            # Filter for Used / collectible cards. This keeps PSA slabs + NM cards.
+            "filter": "conditions:{USED}",
+        }
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+
+        try:
+            resp = requests.get(
+                f"{self.BROWSE_BASE_URL}/buy/browse/v1/item_summary/search",
+                params=params,
+                headers=headers,
+                timeout=10,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            items = data.get("itemSummaries", [])
+            prices: List[float] = []
+            for item in items:
+                try:
+                    price_info = item.get("price") or {}
+                    currency = price_info.get("currency")
+                    value = price_info.get("value")
+                    if currency != "USD" or value is None:
+                        continue
+                    prices.append(float(value))
+                except (ValueError, TypeError):
+                    continue
+            return prices
+        except requests.exceptions.HTTPError as exc:
+            logger.warning("Browse API request failed (%s): %s", exc.response.status_code if exc.response else "HTTPError", exc)
+        except requests.exceptions.RequestException as exc:
+            logger.warning("Browse API request failed: %s", exc)
+        except Exception as exc:
+            logger.error("Unexpected error calling Browse API: %s", exc)
+        return []
 
     def _get_average_for_query(self, query: str) -> Optional[float]:
         """Internal helper to fetch an average price for an arbitrary eBay query."""
         if not self.enabled:
             return None
 
-        try:
-            response = requests.get(
-                self.BASE_URL,
-                params=self._build_params(query),
-                timeout=10,
-            )
-            response.raise_for_status()
-            prices = self._extract_prices(response.json())
-            if not prices:
-                return None
-            # Simple trimmed mean to reduce outliers
-            prices.sort()
-            trimmed = prices[1:-1] if len(prices) > 2 else prices
-            if not trimmed:
-                trimmed = prices
-            return round(sum(trimmed) / len(trimmed), 2)
-        except requests.exceptions.RequestException as exc:
-            logger.warning("EbayPriceService request failed: %s", exc)
-        except Exception as exc:
-            logger.error("Unexpected error in EbayPriceService: %s", exc)
-
-        return None
+        prices = self._search_browse_api(query)
+        if not prices:
+            return None
+        prices.sort()
+        trimmed = prices[1:-1] if len(prices) > 2 else prices
+        if not trimmed:
+            trimmed = prices
+        return round(sum(trimmed) / len(trimmed), 2)
 
     def get_average_price(self, card_name: str, set_name: Optional[str] = None) -> Optional[float]:
         """
