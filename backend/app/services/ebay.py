@@ -160,7 +160,7 @@ class EbayPriceService:
         card_name: str,
         set_name: Optional[str],
         grade_label: str,
-        max_listings: int = 15,
+        max_listings: int = 5,
     ) -> List[Dict]:
         """
         Return individual listing prices (and end dates) for a given grade.
