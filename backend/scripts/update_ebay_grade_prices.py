@@ -20,6 +20,7 @@ Notes:
 
 import sys
 import os
+from datetime import datetime
 from typing import Optional
 
 # Add parent directory to path
@@ -33,8 +34,9 @@ from app.services.grades import GRADE_ORDER
 from app.services.pokemon_tcg_sync import pokemon_tcg_sync
 
 
-# Optional safety limit while testing. Set to None to process all cards.
-MAX_CARDS: Optional[int] = None
+# Optional safety limit while testing. We cap updates to the first 1000 cards
+# to keep runtime manageable, matching the core DB update behavior.
+MAX_CARDS: Optional[int] = 1000
 
 
 def update_graded_prices() -> dict:
@@ -63,23 +65,39 @@ def update_graded_prices() -> dict:
             print(f"[EBAY] ({i}/{total_cards}) {card_name} [{set_name}]")
 
             for grade in GRADE_ORDER:
-                price = ebay_price_service.get_average_price_for_grade(
+                listings = ebay_price_service.get_listing_prices_for_grade(
                     card_name, set_name, grade
                 )
-                if price is None:
+                if not listings:
                     continue
 
-                # Record as a graded price point sourced from eBay.
-                pokemon_tcg_sync._record_price_point(  # type: ignore[attr-defined]
-                    price_db,
-                    card.external_id,
-                    price,
-                    price_type="graded",
-                    volume=None,
-                    source="ebay",
-                    grade=grade,
-                )
-                updated_points += 1
+                for listing in listings:
+                    price = listing.get("price")
+                    if price is None:
+                        continue
+
+                    # Parse end date if available
+                    end_date_str = listing.get("end_date")
+                    collected_at = None
+                    if end_date_str:
+                        try:
+                            collected_at = datetime.fromisoformat(
+                                end_date_str.replace("Z", "+00:00")
+                            )
+                        except ValueError:
+                            collected_at = None
+
+                    pokemon_tcg_sync._record_price_point(  # type: ignore[attr-defined]
+                        price_db,
+                        card.external_id,
+                        price,
+                        price_type="graded",
+                        volume=None,
+                        source="ebay",
+                        grade=grade,
+                        collected_at=collected_at,
+                    )
+                    updated_points += 1
 
             # Commit periodically to avoid huge transactions
             if i % 50 == 0:

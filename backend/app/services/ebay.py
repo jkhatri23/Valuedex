@@ -1,7 +1,7 @@
 import base64
 import logging
 import time
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import requests
 
@@ -79,8 +79,8 @@ class EbayPriceService:
     # ------------------------------------------------------------------ #
     # Browse search helpers
     # ------------------------------------------------------------------ #
-    def _search_browse_api(self, query: str) -> List[float]:
-        """Call Browse search endpoint and return a list of price floats (USD)."""
+    def _search_browse_api(self, query: str) -> List[Dict]:
+        """Call Browse search endpoint and return list of item summaries."""
         token = self._get_access_token()
         if not token:
             return []
@@ -107,19 +107,7 @@ class EbayPriceService:
             )
             resp.raise_for_status()
             data = resp.json()
-            items = data.get("itemSummaries", [])
-            prices: List[float] = []
-            for item in items:
-                try:
-                    price_info = item.get("price") or {}
-                    currency = price_info.get("currency")
-                    value = price_info.get("value")
-                    if currency != "USD" or value is None:
-                        continue
-                    prices.append(float(value))
-                except (ValueError, TypeError):
-                    continue
-            return prices
+            return data.get("itemSummaries", [])
         except requests.exceptions.HTTPError as exc:
             logger.warning("Browse API request failed (%s): %s", exc.response.status_code if exc.response else "HTTPError", exc)
         except requests.exceptions.RequestException as exc:
@@ -133,7 +121,18 @@ class EbayPriceService:
         if not self.enabled:
             return None
 
-        prices = self._search_browse_api(query)
+        items = self._search_browse_api(query)
+        prices: List[float] = []
+        for item in items:
+            try:
+                price_info = item.get("price") or {}
+                currency = price_info.get("currency")
+                value = price_info.get("value")
+                if currency != "USD" or value is None:
+                    continue
+                prices.append(float(value))
+            except (ValueError, TypeError):
+                continue
         if not prices:
             return None
         prices.sort()
@@ -155,6 +154,51 @@ class EbayPriceService:
         query_components.append("pokemon card")
         query = " ".join(filter(None, query_components))
         return self._get_average_for_query(query)
+
+    def get_listing_prices_for_grade(
+        self,
+        card_name: str,
+        set_name: Optional[str],
+        grade_label: str,
+        max_listings: int = 15,
+    ) -> List[Dict]:
+        """
+        Return individual listing prices (and end dates) for a given grade.
+        """
+        if not self.enabled:
+            return []
+
+        query_components = [card_name]
+        if set_name:
+            query_components.append(set_name)
+        query_components.append(grade_label)
+        query_components.append("pokemon card")
+        query = " ".join(filter(None, query_components))
+
+        items = self._search_browse_api(query)
+        listings: List[Dict] = []
+
+        for item in items[:max_listings]:
+            try:
+                price_info = item.get("price") or {}
+                currency = price_info.get("currency")
+                value = price_info.get("value")
+                if currency != "USD" or value is None:
+                    continue
+
+                end_date = item.get("itemEndDate") or item.get("itemCreationDate")
+                listings.append(
+                    {
+                        "price": float(value),
+                        "end_date": end_date,
+                        "title": item.get("title"),
+                        "item_id": item.get("itemId"),
+                    }
+                )
+            except (ValueError, TypeError):
+                continue
+
+        return listings
 
     def get_average_price_for_grade(
         self,

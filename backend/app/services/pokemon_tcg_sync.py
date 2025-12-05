@@ -32,7 +32,7 @@ class PokemonTCGSync:
         if self.api_key:
             self.headers["X-Api-Key"] = self.api_key
     
-    def fetch_all_cards(self, page_size: int = 250) -> List[Dict]:
+    def fetch_all_cards(self, page_size: int = 50, max_cards: Optional[int] = None) -> List[Dict]:
         """
         Fetch all cards from Pokemon TCG API using pagination.
         Returns a list of all cards.
@@ -42,6 +42,9 @@ class PokemonTCGSync:
         
         print(f"[SYNC] Starting to fetch all cards from Pokemon TCG API...")
         
+        MAX_RETRIES = 3
+        RETRY_DELAY = 5  # seconds
+
         while True:
             try:
                 url = f"{self.BASE_URL}/cards"
@@ -51,8 +54,24 @@ class PokemonTCGSync:
                 }
                 
                 print(f"[SYNC] Fetching page {page}...")
-                response = requests.get(url, params=params, headers=self.headers, timeout=60)
-                response.raise_for_status()
+                attempts = 0
+                while attempts < MAX_RETRIES:
+                    try:
+                        response = requests.get(
+                            url,
+                            params=params,
+                            headers=self.headers,
+                            timeout=60,
+                        )
+                        response.raise_for_status()
+                        break
+                    except requests.exceptions.RequestException as e:
+                        attempts += 1
+                        print(f"[SYNC] Error fetching page {page} (attempt {attempts}/{MAX_RETRIES}): {e}")
+                        if attempts >= MAX_RETRIES:
+                            print(f"[SYNC] Reached max retries for page {page}. Stopping fetch.")
+                            return all_cards
+                        time.sleep(RETRY_DELAY * attempts)
                 
                 data = response.json()
                 cards = data.get("data", [])
@@ -61,6 +80,9 @@ class PokemonTCGSync:
                     break
                 
                 all_cards.extend(cards)
+                if max_cards and len(all_cards) >= max_cards:
+                    all_cards = all_cards[:max_cards]
+                    break
                 print(f"[SYNC] Fetched {len(cards)} cards from page {page}. Total: {len(all_cards)}")
                 
                 # Check if there are more pages
@@ -125,6 +147,7 @@ class PokemonTCGSync:
         volume: Optional[int] = None,
         source: str = "pokemontcg_api",
         grade: Optional[str] = None,
+        collected_at: Optional[datetime] = None,
     ):
         if not price_db or price is None or price <= 0 or not card_external_id:
             return
@@ -141,7 +164,7 @@ class PokemonTCGSync:
                 source=source,
                 grade=normalized_grade,
                 grade_rank=rank,
-                collected_at=datetime.utcnow(),
+                collected_at=collected_at or datetime.utcnow(),
             )
             price_db.add(price_point)
         except Exception as e:
@@ -270,7 +293,7 @@ class PokemonTCGSync:
             db.rollback()
             return None
     
-    def populate_database(self, batch_size: int = 100) -> Dict:
+    def populate_database(self, batch_size: int = 100, max_cards: int = 1000) -> Dict:
         """
         Populate the database with all cards from Pokemon TCG API.
         This is the initial population - can take a while!
@@ -281,7 +304,7 @@ class PokemonTCGSync:
         start_time = time.time()
         
         # Fetch all cards
-        all_cards = self.fetch_all_cards()
+        all_cards = self.fetch_all_cards(max_cards=max_cards)
         
         if not all_cards:
             print("[SYNC] No cards fetched. Aborting.")
@@ -346,7 +369,7 @@ class PokemonTCGSync:
             db.close()
             price_db.close()
     
-    def update_database(self, batch_size: int = 100) -> Dict:
+    def update_database(self, batch_size: int = 100, max_cards: int = 1000) -> Dict:
         """
         Update the database with latest card information and prices.
         This is the daily update job - faster than full population.
@@ -357,7 +380,7 @@ class PokemonTCGSync:
         start_time = time.time()
         
         # Fetch all cards (API will return latest data)
-        all_cards = self.fetch_all_cards()
+        all_cards = self.fetch_all_cards(max_cards=max_cards)
         
         if not all_cards:
             print("[SYNC] No cards fetched. Aborting.")
