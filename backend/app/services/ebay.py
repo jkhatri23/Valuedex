@@ -85,12 +85,9 @@ class EbayPriceService:
         if not token:
             return []
 
-        params = {
+        base_params = {
             "q": query,
             "limit": "50",
-            "sort": "-price",
-            # Filter for Used / collectible cards. This keeps PSA slabs + NM cards.
-            "filter": "conditions:{USED}",
         }
         headers = {
             "Authorization": f"Bearer {token}",
@@ -98,22 +95,53 @@ class EbayPriceService:
             "Accept": "application/json",
         }
 
-        try:
-            resp = requests.get(
-                f"{self.BROWSE_BASE_URL}/buy/browse/v1/item_summary/search",
-                params=params,
-                headers=headers,
-                timeout=10,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return data.get("itemSummaries", [])
-        except requests.exceptions.HTTPError as exc:
-            logger.warning("Browse API request failed (%s): %s", exc.response.status_code if exc.response else "HTTPError", exc)
-        except requests.exceptions.RequestException as exc:
-            logger.warning("Browse API request failed: %s", exc)
-        except Exception as exc:
-            logger.error("Unexpected error calling Browse API: %s", exc)
+        filter_candidates = [
+            "conditions:{USED},buyingOptions:{SOLD},priceCurrency:USD",
+            "conditions:{USED},priceCurrency:USD",
+            "conditions:{USED}",
+        ]
+        sort_candidates = ["NEWLY_LISTED", "-price"]
+
+        attempts = 0
+        max_attempts = 20
+
+        for filter_value in filter_candidates:
+            for sort_value in sort_candidates:
+                if attempts >= max_attempts:
+                    logger.warning(
+                        "Browse API attempt limit reached (%s) for query '%s'",
+                        max_attempts,
+                        query,
+                    )
+                    return []
+                
+                attempts += 1
+                params = dict(base_params)
+                params["filter"] = filter_value
+                params["sort"] = sort_value
+                try:
+                    resp = requests.get(
+                        f"{self.BROWSE_BASE_URL}/buy/browse/v1/item_summary/search",
+                        params=params,
+                        headers=headers,
+                        timeout=10,
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    return data.get("itemSummaries", [])
+                except requests.exceptions.HTTPError as exc:
+                    logger.warning(
+                        "Browse API request failed (%s) with filter=%s sort=%s: %s",
+                        exc.response.status_code if exc.response else "HTTPError",
+                        filter_value,
+                        sort_value,
+                        exc,
+                    )
+                except requests.exceptions.RequestException as exc:
+                    logger.warning("Browse API request failed: %s", exc)
+                except Exception as exc:
+                    logger.error("Unexpected error calling Browse API: %s", exc)
+
         return []
 
     def _get_average_for_query(self, query: str) -> Optional[float]:
@@ -160,7 +188,7 @@ class EbayPriceService:
         card_name: str,
         set_name: Optional[str],
         grade_label: str,
-        max_listings: int = 5,
+        max_listings: int = 3,
     ) -> List[Dict]:
         """
         Return individual listing prices (and end dates) for a given grade.

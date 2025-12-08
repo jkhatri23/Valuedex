@@ -11,6 +11,47 @@ ensure_card_features_sentiment_column()
 class FeatureService:
     """Calculate features for ML model and investment ratings"""
     
+    @staticmethod
+    def _clamp(value: float, min_value: float = 0.0, max_value: float = 1.0) -> float:
+        return max(min_value, min(max_value, value))
+    
+    @classmethod
+    def _scale(cls, value: float, min_value: float, max_value: float) -> float:
+        if max_value == min_value:
+            return 0.5
+        normalized = (value - min_value) / (max_value - min_value)
+        return cls._clamp(normalized)
+    
+    @classmethod
+    def _prefer_range(
+        cls,
+        value: float,
+        ideal_min: float,
+        ideal_max: float,
+        absolute_min: float,
+        absolute_max: float
+    ) -> float:
+        """
+        Scores how well a value sits inside an ideal band while penalizing extremes.
+        Returns 0-1 where 1 represents the sweet spot.
+        """
+        if value <= absolute_min or value >= absolute_max:
+            return 0.0
+        if ideal_min <= value <= ideal_max:
+            return 1.0
+        
+        if value < ideal_min:
+            gap = ideal_min - value
+            span = ideal_min - absolute_min
+        else:
+            gap = value - ideal_max
+            span = absolute_max - ideal_max
+        
+        if span <= 0:
+            return 0.0
+        
+        return cls._clamp(1 - (gap / span))
+    
     # Rarity tiers (higher = more rare)
     RARITY_SCORES = {
         "common": 1.0,
@@ -103,50 +144,75 @@ class FeatureService:
         market_sentiment: float,
     ) -> tuple[float, str]:
         """
-        Calculate investment score (1-10) and rating
-        Similar to stock ratings: Strong Buy, Buy, Hold, Sell
+        Calculate investment score (1-10) and rating.
+        The score blends fundamentals, momentum, sentiment, stability, and valuation so
+        it mirrors the same signals we use during price prediction.
         """
-        score = 5.0  # Base score
+        rarity_score = rarity_score if rarity_score is not None else 0.0
+        popularity_score = popularity_score if popularity_score is not None else 50.0
+        artist_score = artist_score if artist_score is not None else 5.0
+        trend_30d = trend_30d if trend_30d is not None else 0.0
+        trend_90d = trend_90d if trend_90d is not None else 0.0
+        trend_1y = trend_1y if trend_1y is not None else 0.0
+        volatility = volatility if volatility is not None else 15.0
+        market_sentiment = market_sentiment if market_sentiment is not None else 50.0
+        current_price = current_price if current_price is not None else 50.0
         
-        # Rarity factor (higher rarity = better investment)
-        score += (rarity_score / 10) * 1.5
+        fundamentals = (
+            (rarity_score / 10) * 0.4 +
+            (popularity_score / 100) * 0.4 +
+            (artist_score / 10) * 0.2
+        ) * 10
         
-        # Popularity factor
-        score += (popularity_score / 100) * 2.0
+        short_term = self._scale(trend_30d, -15, 20)
+        mid_term = self._scale(trend_90d, -20, 25)
+        long_term = self._scale(trend_1y, -30, 40)
+        momentum = (
+            short_term * 0.25 +
+            mid_term * 0.30 +
+            long_term * 0.45
+        ) * 10
         
-        # Artist factor
-        score += (artist_score / 10) * 0.8
+        sentiment_component = self._scale(market_sentiment, 35, 80)
+        sentiment = (
+            sentiment_component * 0.65 +
+            (popularity_score / 100) * 0.35
+        ) * 10
         
-        # Trend factors (positive trends increase score)
-        if trend_1y > 10:
-            score += 1.5
-        elif trend_1y > 5:
-            score += 0.8
-        elif trend_1y < -10:
-            score -= 1.0
+        volatility_quality = self._prefer_range(volatility, 12, 28, 5, 45)
+        liquidity_quality = self._prefer_range(current_price, 25, 250, 5, 1000)
+        stability = (volatility_quality * 0.7 + liquidity_quality * 0.3) * 10
         
-        if trend_90d > 5:
-            score += 0.5
-        elif trend_90d < -5:
-            score -= 0.5
+        fundamentals_scale = fundamentals / 10
+        price_scale = self._scale(current_price, 50, 600)
+        value_alignment = self._clamp(0.5 + (fundamentals_scale - price_scale) * 0.6)
+        valuation = value_alignment * 10
         
-        # Sentiment factor (market buzz can drive demand)
-        sentiment_normalized = (market_sentiment - 50) / 50  # -1 to 1 range
-        score += sentiment_normalized * 1.2
+        composite_score = (
+            fundamentals * 0.30 +
+            momentum * 0.25 +
+            sentiment * 0.15 +
+            stability * 0.15 +
+            valuation * 0.15
+        )
         
-        # Volatility (moderate volatility is good for growth)
-        if 10 < volatility < 25:
-            score += 0.5
-        elif volatility > 40:
-            score -= 0.3
+        penalty = 0.0
+        if trend_30d < -10:
+            penalty += 0.3
+        if trend_90d < -8:
+            penalty += 0.4
+        if trend_1y < -5:
+            penalty += 0.5
+        if volatility > 35:
+            penalty += 0.4
         
-        # Price tier (very expensive cards are less liquid)
-        if current_price > 500:
-            score -= 0.3
-        elif 50 < current_price < 200:
-            score += 0.2
+        bonus = 0.0
+        if fundamentals >= 7.5 and momentum >= 6.5 and sentiment >= 6.0:
+            bonus += 0.3
         
-        # Clamp to 1-10
+        score = composite_score - penalty + bonus
+        
+        # Clamp to 1-10 so the rating scale remains familiar
         score = max(1.0, min(10.0, score))
         
         # Determine rating

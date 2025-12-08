@@ -34,9 +34,9 @@ from app.services.grades import GRADE_ORDER
 from app.services.pokemon_tcg_sync import pokemon_tcg_sync
 
 
-# Optional safety limit while testing. We cap updates to the first 1000 cards
+# Optional safety limit while testing. We cap updates to the first 260 cards
 # to keep runtime manageable, matching the core DB update behavior.
-MAX_CARDS: Optional[int] = 1000
+MAX_CARDS: Optional[int] = 20
 
 
 def update_graded_prices() -> dict:
