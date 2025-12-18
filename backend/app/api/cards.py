@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Tuple
 from datetime import datetime, timedelta
+from statistics import median
+import math
 from urllib.parse import quote_plus
 import random
 import asyncio
@@ -45,6 +47,87 @@ class PricePoint(BaseModel):
     price: float
     volume: Optional[int] = None
     grade: Optional[str] = None
+
+
+def _aggregate_price_points(
+    points: List[Dict],
+    max_points: int = 180,
+) -> List[Dict]:
+    """
+    Downsample price points to monthly medians to keep trend shape while
+    reducing noisy/high-volume data.
+    """
+    if not points:
+        return []
+
+    parsed: List[Tuple[datetime, Dict]] = []
+    for point in points:
+        date_str = point.get("date")
+        if not date_str:
+            continue
+        try:
+            dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        except Exception:
+            continue
+        parsed.append((dt, point))
+
+    if not parsed:
+        return []
+
+    parsed.sort(key=lambda x: x[0])
+
+    # If already under the limit, just normalize date formatting.
+    if len(parsed) <= max_points:
+        return [{**p, "date": dt.isoformat()} for dt, p in parsed]
+
+    buckets: Dict[str, List[Dict]] = {}
+    for dt, point in parsed:
+        key = f"{dt.year:04d}-{dt.month:02d}"
+        buckets.setdefault(key, []).append({**point, "date": dt})
+
+    aggregated: List[Dict] = []
+    for key in sorted(buckets.keys()):
+        entries = buckets[key]
+        prices = [e.get("price") for e in entries if e.get("price") is not None]
+        if not prices:
+            continue
+        volumes = [e.get("volume") for e in entries if e.get("volume") is not None]
+        median_price = round(median(prices), 2)
+        avg_volume = int(sum(volumes) / len(volumes)) if volumes else None
+
+        representative_dt = (
+            entries[-1]["date"]
+            if isinstance(entries[-1]["date"], datetime)
+            else parsed[0][0]
+        )
+
+        aggregated.append(
+            {
+                "date": representative_dt.isoformat(),
+                "price": median_price,
+                "volume": avg_volume,
+                "grade": entries[0].get("grade"),
+                "source": entries[0].get("source") or "aggregated",
+            }
+        )
+
+    aggregated.sort(key=lambda x: x["date"])
+
+    # Further downsample if needed while preserving endpoints.
+    if len(aggregated) > max_points:
+        step = math.ceil(len(aggregated) / max_points)
+        aggregated = aggregated[::step]
+
+    # Ensure first and last real observations are kept for accuracy.
+    first_dt, first_point = parsed[0]
+    last_dt, last_point = parsed[-1]
+
+    if not aggregated or aggregated[0]["date"] != first_dt.isoformat():
+        aggregated.insert(0, {**first_point, "date": first_dt.isoformat()})
+    if aggregated[-1]["date"] != last_dt.isoformat():
+        aggregated.append({**last_point, "date": last_dt.isoformat()})
+
+    return aggregated
 
 @router.get("/search")
 async def search_cards(
@@ -398,9 +481,13 @@ async def get_price_history(
         # Grade-specific history from price_points DB only.
         # If there are no grade-specific rows, we return an empty array
         # rather than falling back to loose prices.
+        
+        # Map "Near Mint" to None (ungraded) for database query
+        db_grade = None if grade == "Near Mint" else grade
+        
         query = price_db.query(PricePointModel).filter(
             PricePointModel.card_external_id == card.external_id,
-            PricePointModel.grade == grade,
+            PricePointModel.grade == db_grade,
         )
         points = query.order_by(PricePointModel.collected_at.asc()).all()
 
@@ -410,6 +497,7 @@ async def get_price_history(
                 "price": p.price or 0,
                 "volume": p.volume,
                 "grade": p.grade,
+                "source": p.source,
             }
             for p in points
         ]
@@ -431,6 +519,8 @@ async def get_price_history(
             }
             for p in prices
         ]
+
+    price_points = _aggregate_price_points(price_points)
 
     return {"card_id": card_id, "prices": price_points}
 
@@ -465,6 +555,50 @@ async def get_investment_rating(card_id: str, db: Session = Depends(get_db)):
             "volatility": features.price_volatility
         }
     }
+
+def _aggregate_price_points(price_points: List[Dict], max_points: int = 180) -> List[Dict]:
+    """
+    Aggregate price points by month using median, keeping first/last points.
+    Reduces data while preserving trend shape.
+    """
+    if not price_points or len(price_points) <= max_points:
+        return price_points
+    
+    from collections import defaultdict
+    from statistics import median
+    from datetime import datetime
+    
+    # Group by year-month
+    by_month = defaultdict(list)
+    for point in price_points:
+        dt = datetime.fromisoformat(point["date"].replace("Z", "+00:00"))
+        month_key = (dt.year, dt.month)
+        by_month[month_key].append(point)
+    
+    # Take median of each month
+    aggregated = []
+    for month_key in sorted(by_month.keys()):
+        points_in_month = by_month[month_key]
+        prices = [p["price"] for p in points_in_month if p["price"] > 0]
+        
+        if prices:
+            median_price = median(prices)
+            # Use the middle point's date
+            mid_point = points_in_month[len(points_in_month) // 2]
+            aggregated.append({
+                "date": mid_point["date"],
+                "price": round(median_price, 2),
+                "volume": mid_point.get("volume"),
+                "grade": mid_point.get("grade"),
+                "source": mid_point.get("source"),
+            })
+    
+    # Always keep first and last original points for accuracy
+    if aggregated and price_points:
+        aggregated[0] = price_points[0]
+        aggregated[-1] = price_points[-1]
+    
+    return aggregated
 
 # Helper functions
 def _extract_rarity(name: str) -> str:

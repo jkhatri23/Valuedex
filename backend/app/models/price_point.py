@@ -25,5 +25,6 @@ class PricePoint(PriceBase):
     price = Column(Float)
     volume = Column(Integer, nullable=True)
     source = Column(String, default="pokemontcg_api")
+    shipping_cost = Column(Float, nullable=True)
     collected_at = Column(DateTime, default=datetime.utcnow, index=True)
 

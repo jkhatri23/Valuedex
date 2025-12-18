@@ -12,15 +12,12 @@ interface PriceChartProps {
 export default function PriceChart({ cardId }: PriceChartProps) {
   const [priceData, setPriceData] = useState<PriceHistory[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [condition, setCondition] = useState<CardCondition | 'All'>('All')
+  const [condition, setCondition] = useState<CardCondition>('Near Mint')
 
   useEffect(() => {
     const fetchPrices = async () => {
       setIsLoading(true)
-      const data = await getPriceHistory(
-        cardId,
-        condition === 'All' ? undefined : condition
-      )
+      const data = await getPriceHistory(cardId, condition)
       setPriceData(data)
       setIsLoading(false)
     }
@@ -47,9 +44,7 @@ export default function PriceChart({ cardId }: PriceChartProps) {
               Price History
             </h3>
             <p className="text-xs text-gray-500 dark:text-white/60">
-              {condition === 'All'
-                ? 'Loose / market price trend'
-                : `Condition: ${condition}`}
+              Condition: {condition}
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -58,12 +53,12 @@ export default function PriceChart({ cardId }: PriceChartProps) {
             </span>
             <select
               value={condition}
+              aria-label="Select card condition"
               onChange={(e) =>
-                setCondition(e.target.value as CardCondition | 'All')
+                setCondition(e.target.value as CardCondition)
               }
               className="text-sm px-3 py-1.5 rounded-md border border-gray-300 bg-white dark:bg-[#111] dark:border-white/20 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="All">All / Loose</option>
               <option value="Near Mint">Near Mint</option>
               <option value="PSA 6">PSA 6</option>
               <option value="PSA 7">PSA 7</option>
@@ -88,7 +83,10 @@ export default function PriceChart({ cardId }: PriceChartProps) {
   // Format data for chart
   const chartData = priceData.map((item) => ({
     date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+    dateLabel: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    isoDate: item.date,
     price: item.price,
+    source: item.source || 'unknown',
   }))
 
   // Calculate price change
@@ -137,12 +135,12 @@ export default function PriceChart({ cardId }: PriceChartProps) {
             </span>
             <select
               value={condition}
+              aria-label="Select card condition"
               onChange={(e) =>
-                setCondition(e.target.value as CardCondition | 'All')
+                setCondition(e.target.value as CardCondition)
               }
               className="text-sm px-3 py-1.5 rounded-md border border-gray-300 bg-white dark:bg-[#111] dark:border-white/20 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="All">All / Loose</option>
               <option value="Near Mint">Near Mint</option>
               <option value="PSA 6">PSA 6</option>
               <option value="PSA 7">PSA 7</option>
@@ -175,6 +173,18 @@ export default function PriceChart({ cardId }: PriceChartProps) {
               boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
             }}
             formatter={(value: any) => [`$${value.toFixed(2)}`, 'Price']}
+            labelFormatter={() => ''}
+            content={({ active, payload }) => {
+              if (!active || !payload || payload.length === 0) return null
+              const point = payload[0].payload as any
+              return (
+                <div className="p-3">
+                  <div className="text-sm font-semibold text-gray-900">Price: ${point.price?.toFixed(2)}</div>
+                  <div className="text-xs text-gray-600">{point.dateLabel}</div>
+                  <div className="text-xs text-gray-600">Source: {point.source}</div>
+                </div>
+              )
+            }}
           />
           <Legend />
           <Line 

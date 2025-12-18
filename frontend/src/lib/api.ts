@@ -55,6 +55,7 @@ export interface PriceHistory {
   price: number
   volume?: number
   grade?: string | null
+  source?: string
 }
 
 export interface Prediction {
@@ -67,14 +68,56 @@ export interface Prediction {
   years_ahead: number
   target_date: string
   growth_rate: number
+  model_version: string
+  
+  // Multiple scenarios
+  scenarios: {
+    conservative: number
+    moderate: number
+    aggressive: number
+  }
+  
+  // Comprehensive risk assessment
+  risk_assessment: {
+    risk_level: 'low' | 'moderate' | 'high'
+    volatility: number
+    downside_risk_pct: number
+    upside_potential_pct: number
+    reward_risk_ratio: number
+  }
+  
+  // Market factors
+  market_factors: {
+    sentiment_multiplier: number
+    popularity_score: number
+    market_sentiment: number | null
+    current_trend: number
+  }
+  
+  // Investment recommendation
+  recommendation: 'strong_buy' | 'buy' | 'hold' | 'consider_selling' | 'sell'
+  
+  // Timeline with scenarios
   timeline: Array<{
     predicted_price: number
     years_ahead: number
     target_date: string
+    conservative: number
+    moderate: number
+    aggressive: number
+    confidence_lower: number
+    confidence_upper: number
+    risk_level: string
+    recommendation: string
   }>
+  
   insights?: {
     investment_rating: string
     investment_score: number
+    time_series_contribution: number
+    feature_contribution: number
+    volatility: number
+    reward_risk_ratio: number
   }
 }
 

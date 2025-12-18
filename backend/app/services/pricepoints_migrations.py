@@ -26,6 +26,8 @@ def ensure_pricepoints_grade_columns() -> None:
         statements.append("ALTER TABLE price_points ADD COLUMN grade VARCHAR")
     if "grade_rank" not in existing_columns:
         statements.append("ALTER TABLE price_points ADD COLUMN grade_rank INTEGER")
+    if "shipping_cost" not in existing_columns:
+        statements.append("ALTER TABLE price_points ADD COLUMN shipping_cost FLOAT")
 
     if not statements:
         return

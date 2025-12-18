@@ -14,10 +14,32 @@ interface InvestmentRatingProps {
     trend_90d: number
     trend_1y: number
     volatility: number
+    market_sentiment?: number
+  } | null
+  prediction?: {
+    recommendation: string
+    risk_assessment: {
+      risk_level: string
+      reward_risk_ratio: number
+      volatility: number
+      upside_potential_pct: number
+      downside_risk_pct: number
+    }
+    scenarios: {
+      conservative: number
+      moderate: number
+      aggressive: number
+    }
+    growth_rate: number
+    market_factors: {
+      sentiment_multiplier: number
+      popularity_score: number
+      current_trend: number
+    }
   } | null
 }
 
-export default function InvestmentRating({ features }: InvestmentRatingProps) {
+export default function InvestmentRating({ features, prediction }: InvestmentRatingProps) {
   // Handle null/undefined features
   if (!features) {
     return (
@@ -30,6 +52,55 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
         </div>
       </div>
     )
+  }
+  
+  // Generate AI-powered explanation using prediction data
+  const getAIExplanation = () => {
+    if (!prediction) {
+      // Fallback to feature-based explanations
+      if (features.investment_rating === 'Strong Buy') 
+        return 'This card shows exceptional growth potential with strong fundamentals across multiple factors.'
+      if (features.investment_rating === 'Buy') 
+        return 'This card demonstrates good investment potential with positive market trends.'
+      if (features.investment_rating === 'Hold') 
+        return 'This card is fairly valued at current prices. Consider holding or monitoring closely.'
+      if (features.investment_rating === 'Underperform') 
+        return 'This card may underperform the market. Exercise caution when investing.'
+      return 'This card shows weak fundamentals and may decline in value. Consider selling.'
+    }
+    
+    const { recommendation, risk_assessment, growth_rate, market_factors } = prediction
+    const riskLevel = risk_assessment.risk_level
+    const rewardRisk = risk_assessment.reward_risk_ratio
+    const upside = risk_assessment.upside_potential_pct
+    const downside = Math.abs(risk_assessment.downside_risk_pct)
+    
+    // AI-generated explanation based on prediction model
+    let explanation = ''
+    
+    if (recommendation === 'strong_buy') {
+      explanation = `Exceptional investment opportunity with a ${rewardRisk.toFixed(1)}x reward-risk ratio. `
+      explanation += `Upside potential of +${upside.toFixed(0)}% significantly outweighs the ${downside.toFixed(0)}% downside risk. `
+      explanation += `${riskLevel === 'low' ? 'Low risk profile makes this ideal for conservative portfolios.' : ''}`
+    } else if (recommendation === 'buy') {
+      explanation = `Strong buy signal with ${growth_rate.toFixed(1)}% expected growth. `
+      explanation += `Reward-risk ratio of ${rewardRisk.toFixed(1)}x indicates good potential. `
+      explanation += `Market sentiment (${market_factors.sentiment_multiplier.toFixed(2)}x) supports upward momentum.`
+    } else if (recommendation === 'hold') {
+      explanation = `Balanced risk-reward profile (${rewardRisk.toFixed(1)}x ratio). `
+      explanation += `Current valuation is fair with ${Math.abs(growth_rate).toFixed(1)}% expected movement. `
+      explanation += `${riskLevel === 'high' ? 'High volatility suggests monitoring closely before additional investment.' : 'Suitable for patient investors.'}`
+    } else if (recommendation === 'consider_selling') {
+      explanation = `Risk outweighs reward with only ${rewardRisk.toFixed(1)}x ratio. `
+      explanation += `Downside risk of ${downside.toFixed(0)}% is concerning given ${upside.toFixed(0)}% upside. `
+      explanation += `Consider reducing position or setting stop-loss orders.`
+    } else {
+      explanation = `Poor investment profile with ${downside.toFixed(0)}% downside risk. `
+      explanation += `Reward-risk ratio of ${rewardRisk.toFixed(1)}x indicates unfavorable conditions. `
+      explanation += `Market trends suggest considering exit strategy.`
+    }
+    
+    return explanation
   }
 
   const getRatingColor = (rating: string) => {
@@ -64,50 +135,7 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
 
   return (
     <div className="card">
-      {/* Rating Header */}
-      <div className={`bg-gradient-to-r ${getRatingColor(features.investment_rating)} rounded-lg p-6 text-white mb-6`}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <Award className="w-8 h-8" />
-            <div>
-              <div className="text-sm opacity-90">Investment Rating</div>
-              <div className="text-2xl font-bold">{features.investment_rating}</div>
-            </div>
-          </div>
-          {getRatingIcon(features.investment_rating)}
-        </div>
-        
-        {/* Score Bar */}
-        <div>
-          <div className="flex justify-between text-sm mb-2">
-            <span>Investment Score</span>
-            <span className="font-bold">{features.investment_score}/10</span>
-          </div>
-          <div className="w-full bg-white bg-opacity-30 rounded-full h-2">
-            <div
-              className="bg-white rounded-full h-2 transition-all duration-500"
-              style={{ width: `${features.investment_score * 10}%` }}
-            ></div>
-          </div>
-        </div>
-      </div>
 
-      {/* Rating Explanation */}
-      <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg dark:bg-white/5 dark:border-white/10">
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">What This Means</h4>
-        <p className="text-sm text-gray-600 dark:text-white/80">
-          {features.investment_rating === 'Strong Buy' && 
-            'This card shows exceptional growth potential with strong fundamentals across multiple factors.'}
-          {features.investment_rating === 'Buy' && 
-            'This card demonstrates good investment potential with positive market trends.'}
-          {features.investment_rating === 'Hold' && 
-            'This card is fairly valued at current prices. Consider holding or monitoring closely.'}
-          {features.investment_rating === 'Underperform' && 
-            'This card may underperform the market. Exercise caution when investing.'}
-          {features.investment_rating === 'Sell' && 
-            'This card shows weak fundamentals and may decline in value. Consider selling.'}
-        </p>
-      </div>
 
       {/* Key Factors */}
       <div className="space-y-4 mb-6">
@@ -185,21 +213,6 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
             <div className="text-xs text-gray-500 dark:text-white/60 mt-1">1 Year</div>
           </div>
         </div>
-      </div>
-
-      {/* Volatility */}
-      <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg dark:bg-white/5 dark:border-white/10">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-900 dark:text-white">Price Volatility</span>
-          <span className="text-sm font-semibold text-blue-600 dark:text-blue-300">
-            {features.volatility.toFixed(1)}%
-          </span>
-        </div>
-        <p className="text-xs text-gray-600 dark:text-white/70 mt-2">
-          {features.volatility < 10 && 'Low volatility - stable investment'}
-          {features.volatility >= 10 && features.volatility < 25 && 'Moderate volatility - balanced risk/reward'}
-          {features.volatility >= 25 && 'High volatility - higher risk but potential for gains'}
-        </p>
       </div>
     </div>
   )

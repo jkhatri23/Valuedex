@@ -13,6 +13,7 @@ import { TrendingUp, Search, Brain, Database, LineChart, Target } from 'lucide-r
 export default function Home() {
   const [selectedCard, setSelectedCard] = useState<any>(null)
   const [cardDetails, setCardDetails] = useState<any>(null)
+  const [latestPrediction, setLatestPrediction] = useState<any>(null)
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-[#0a0a0a] dark:via-[#0d0d0d] dark:to-[#121212]">
@@ -72,57 +73,62 @@ export default function Home() {
             <div className="bg-white/80 dark:bg-[#121212]/70 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-2xl p-8 shadow-xl dark:shadow-black/40">
               <div className="text-center mb-8">
                 <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">How We Predict</h3>
-                <p className="text-gray-600 dark:text-white text-lg">Hybrid modeling using market history and card attributes</p>
+                <p className="text-gray-600 dark:text-white text-lg">Advanced crypto-style forecasting with comprehensive risk analysis</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white border border-gray-200 rounded-xl p-6 text-center dark:bg-[#121212]/70 dark:border-white/10">
                   <div className="bg-gray-100 dark:bg-white/5 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                     <LineChart className="w-6 h-6 text-blue-500 dark:text-blue-400" />
                   </div>
-                  <h4 className="text-gray-900 dark:text-white font-semibold mb-1">Time Series</h4>
-                  <p className="text-gray-600 dark:text-white/90 text-sm">Linear regression over historical prices</p>
-                  <p className="text-gray-500 dark:text-white/60 text-xs mt-3">Primary weight: 60%</p>
+                  <h4 className="text-gray-900 dark:text-white font-semibold mb-1">Exponential Smoothing</h4>
+                  <p className="text-gray-600 dark:text-white/90 text-sm">Holt's method for trend detection</p>
+                  <p className="text-gray-500 dark:text-white/60 text-xs mt-3">Better than linear models</p>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-xl p-6 text-center dark:bg-[#121212]/70 dark:border-white/10">
                   <div className="bg-gray-100 dark:bg-white/5 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Brain className="w-6 h-6 text-purple-500 dark:text-purple-400" />
                   </div>
-                  <h4 className="text-gray-900 dark:text-white font-semibold mb-1">Feature Model</h4>
-                  <p className="text-gray-600 dark:text-white/90 text-sm">Random Forest on rarity, popularity, artist, trend</p>
-                  <p className="text-gray-500 dark:text-white/60 text-xs mt-3">Secondary weight: 40%</p>
+                  <h4 className="text-gray-900 dark:text-white font-semibold mb-1">Monte Carlo</h4>
+                  <p className="text-gray-600 dark:text-white/90 text-sm">1,000 simulations for risk assessment</p>
+                  <p className="text-gray-500 dark:text-white/60 text-xs mt-3">Crypto/stock standard</p>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-xl p-6 text-center dark:bg-[#121212]/70 dark:border-white/10">
                   <div className="bg-gray-100 dark:bg-white/5 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Database className="w-6 h-6 text-green-500 dark:text-green-400" />
                   </div>
-                  <h4 className="text-gray-900 dark:text-white font-semibold mb-1">Data Sources</h4>
-                  <p className="text-gray-600 dark:text-white/90 text-sm">Pokémon TCG metadata</p>
-                  <p className="text-gray-500 dark:text-white/60 text-xs mt-3">Continuously synced</p>
+                  <h4 className="text-gray-900 dark:text-white font-semibold mb-1">VWAP Analysis</h4>
+                  <p className="text-gray-600 dark:text-white/90 text-sm">Volume-weighted average pricing</p>
+                  <p className="text-gray-500 dark:text-white/60 text-xs mt-3">Market activity aware</p>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-xl p-6 text-center dark:bg-[#121212]/70 dark:border-white/10">
                   <div className="bg-gray-100 dark:bg-white/5 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Target className="w-6 h-6 text-orange-500 dark:text-orange-400" />
                   </div>
-                  <h4 className="text-gray-900 dark:text-white font-semibold mb-1">Prediction Horizon</h4>
-                  <p className="text-gray-600 dark:text-white/90 text-sm">Forecasts up to 5 years with widening confidence</p>
-                  <p className="text-gray-500 dark:text-white/60 text-xs mt-3">Entertainment use only</p>
+                  <h4 className="text-gray-900 dark:text-white font-semibold mb-1">Multi-Scenario</h4>
+                  <p className="text-gray-600 dark:text-white/90 text-sm">Conservative, moderate, aggressive forecasts</p>
+                  <p className="text-gray-500 dark:text-white/60 text-xs mt-3">Risk management</p>
                 </div>
               </div>
               <div className="mt-8 bg-white rounded-xl p-5 border border-gray-200 dark:bg-[#121212]/70 dark:border-white/10">
                 <div className="flex flex-col md:flex-row items-center justify-center gap-3 text-gray-900 dark:text-white">
                   <div className="text-center bg-gray-100 dark:bg-white/5 px-5 py-2 rounded-lg border border-gray-200 dark:border-white/20">
-                    <p className="text-xs text-gray-500 dark:text-white/60 mb-0.5 font-bold">Time Series</p>
-                    <p className="font-mono text-sm">Linear Regression</p>
+                    <p className="text-xs text-gray-500 dark:text-white/60 mb-0.5 font-bold">Exponential Smoothing</p>
+                    <p className="font-mono text-sm">Holt's Method</p>
                   </div>
                   <div className="text-2xl">+</div>
                   <div className="text-center bg-gray-100 dark:bg-white/5 px-5 py-2 rounded-lg border border-gray-200 dark:border-white/20">
-                    <p className="text-xs text-gray-500 dark:text-white/60 mb-0.5 font-bold">Features</p>
-                    <p className="font-mono text-sm">Random Forest</p>
+                    <p className="text-xs text-gray-500 dark:text-white/60 mb-0.5 font-bold">Monte Carlo</p>
+                    <p className="font-mono text-sm">GBM (1K sims)</p>
+                  </div>
+                  <div className="text-2xl">+</div>
+                  <div className="text-center bg-gray-100 dark:bg-white/5 px-5 py-2 rounded-lg border border-gray-200 dark:border-white/20">
+                    <p className="text-xs text-gray-500 dark:text-white/60 mb-0.5 font-bold">Market Factors</p>
+                    <p className="font-mono text-sm">Sentiment + Volume</p>
                   </div>
                   <div className="text-2xl">=</div>
-                  <div className="text-center bg-gray-100 dark:bg-white/5 px-5 py-2 rounded-lg border border-gray-200 dark:border-white/20">
-                    <p className="text-xs text-gray-500 dark:text-white/60 mb-0.5 font-bold">Final Output</p>
-                    <p className="font-mono text-sm">Hybrid Prediction</p>
+                  <div className="text-center bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-2 rounded-lg shadow-md">
+                    <p className="text-xs mb-0.5 font-bold opacity-90">Advanced v2</p>
+                    <p className="font-mono text-sm font-bold">Crypto-Style AI</p>
                   </div>
                 </div>
               </div>
@@ -139,6 +145,7 @@ export default function Home() {
               onClick={() => {
                 setSelectedCard(null)
                 setCardDetails(null)
+                setLatestPrediction(null)
               }}
               className="mb-6 text-gray-600 hover:text-blue-800 dark:text-white/70 dark:hover:text-blue-300 font-medium flex items-center space-x-2"
             >
@@ -156,6 +163,7 @@ export default function Home() {
                   <InvestmentRating 
                     cardId={selectedCard.id}
                     features={cardDetails.features}
+                    prediction={latestPrediction}
                   />
                 )}
               </div>
@@ -169,6 +177,7 @@ export default function Home() {
                       cardId={selectedCard.id}
                       cardName={selectedCard.name}
                       currentPrice={cardDetails.current_price}
+                      onPredictionGenerated={setLatestPrediction}
                     />
                   </>
                 )}

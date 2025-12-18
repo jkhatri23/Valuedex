@@ -82,14 +82,6 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
           <p className="text-gray-600 dark:text-white/70">{details.set_name}</p>
         </div>
 
-        {/* Price */}
-        <div className="rounded-lg p-5 border bg-gradient-to-r from-blue-50 to-purple-50 border-blue-100 dark:bg-[#050505] dark:bg-none dark:border-white/20 dark:shadow-inner">
-          <div className="text-sm text-gray-600 dark:text-white mb-1">Current Market Price</div>
-          <div className="text-4xl font-bold text-blue-600 dark:text-white">
-            ${details.current_price.toFixed(2)}
-          </div>
-        </div>
-
         {/* Details Grid */}
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-white/10">
           <div className="flex items-start space-x-3">

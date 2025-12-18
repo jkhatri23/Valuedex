@@ -1,6 +1,7 @@
 import base64
 import logging
 import time
+from datetime import datetime, timezone
 from typing import Optional, List, Dict
 
 import requests
@@ -79,7 +80,14 @@ class EbayPriceService:
     # ------------------------------------------------------------------ #
     # Browse search helpers
     # ------------------------------------------------------------------ #
-    def _search_browse_api(self, query: str) -> List[Dict]:
+    def _search_browse_api(
+        self,
+        query: str,
+        *,
+        filter_override: Optional[str] = None,
+        sort_override: Optional[str] = None,
+        limit: int = 50,
+    ) -> List[Dict]:
         """Call Browse search endpoint and return list of item summaries."""
         token = self._get_access_token()
         if not token:
@@ -87,7 +95,7 @@ class EbayPriceService:
 
         base_params = {
             "q": query,
-            "limit": "50",
+            "limit": str(limit),
         }
         headers = {
             "Authorization": f"Bearer {token}",
@@ -95,12 +103,20 @@ class EbayPriceService:
             "Accept": "application/json",
         }
 
-        filter_candidates = [
-            "conditions:{USED},buyingOptions:{SOLD},priceCurrency:USD",
-            "conditions:{USED},priceCurrency:USD",
-            "conditions:{USED}",
-        ]
-        sort_candidates = ["NEWLY_LISTED", "-price"]
+        filter_candidates = (
+            [filter_override]
+            if filter_override
+            else [
+                "conditions:{USED},buyingOptions:{SOLD},priceCurrency:USD",
+                "conditions:{USED},priceCurrency:USD",
+                "conditions:{USED}",
+            ]
+        )
+        sort_candidates = (
+            [sort_override]
+            if sort_override
+            else ["NEWLY_LISTED", "-price"]
+        )
 
         attempts = 0
         max_attempts = 20
@@ -143,6 +159,50 @@ class EbayPriceService:
                     logger.error("Unexpected error calling Browse API: %s", exc)
 
         return []
+
+    # ------------------------------------------------------------------ #
+    # Title/grade helpers
+    # ------------------------------------------------------------------ #
+    @staticmethod
+    def _normalize(text: str) -> str:
+        return " ".join(text.lower().split())
+
+    def _has_grade_token(self, title: str, grade_label: str) -> bool:
+        """
+        Require explicit grade tokens like 'psa 7', 'psa7', or 'psa-7'.
+        """
+        title_norm = self._normalize(title)
+        grade_norm = self._normalize(grade_label)
+        psa_token = grade_norm.replace(" ", "")
+        candidates = {
+            grade_norm,
+            psa_token,
+            grade_norm.replace(" ", "-"),
+            psa_token.replace("-", ""),
+        }
+        return any(token in title_norm for token in candidates)
+
+    def _title_matches(
+        self,
+        title: str,
+        card_name: str,
+        set_name: Optional[str],
+        grade_label: str,
+    ) -> bool:
+        title_norm = self._normalize(title)
+        if not self._has_grade_token(title_norm, grade_label):
+            return False
+
+        card_norm = self._normalize(card_name)
+        if card_norm and card_norm not in title_norm:
+            return False
+
+        if set_name:
+            set_norm = self._normalize(set_name)
+            if set_norm and set_norm not in title_norm:
+                return False
+
+        return True
 
     def _get_average_for_query(self, query: str) -> Optional[float]:
         """Internal helper to fetch an average price for an arbitrary eBay query."""
@@ -204,9 +264,33 @@ class EbayPriceService:
         query = " ".join(filter(None, query_components))
 
         items = self._search_browse_api(query)
-        listings: List[Dict] = []
+        graded_items = [
+            i
+            for i in items
+            if "PSA" in (i.get("title", "") or "").upper()
+            and self._title_matches(i.get("title") or "", card_name, set_name, grade_label)
+        ]
+        return self._extract_listings(
+            graded_items,
+            card_name,
+            set_name,
+            grade_label,
+            max_listings=max_listings,
+        )
 
-        for item in items[:max_listings]:
+    def _extract_listings(
+        self,
+        items: List[Dict],
+        card_name: str,
+        set_name: Optional[str],
+        grade_label: str,
+        max_listings: Optional[int] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> List[Dict]:
+        listings: List[Dict] = []
+        subset = items if max_listings is None else items[:max_listings]
+        for item in subset:
             try:
                 price_info = item.get("price") or {}
                 currency = price_info.get("currency")
@@ -214,11 +298,27 @@ class EbayPriceService:
                 if currency != "USD" or value is None:
                     continue
 
-                end_date = item.get("itemEndDate") or item.get("itemCreationDate")
+                end_date_raw = item.get("itemEndDate") or item.get("itemCreationDate")
+                parsed_end = None
+                if end_date_raw:
+                    try:
+                        parsed_end = datetime.fromisoformat(
+                            end_date_raw.replace("Z", "+00:00")
+                        )
+                        if parsed_end.tzinfo:
+                            parsed_end = parsed_end.astimezone(timezone.utc).replace(tzinfo=None)
+                    except ValueError:
+                        parsed_end = None
+
+                if start_date and parsed_end and parsed_end < start_date:
+                    continue
+                if end_date and parsed_end and parsed_end > end_date:
+                    continue
+
                 listings.append(
                     {
                         "price": float(value),
-                        "end_date": end_date,
+                        "end_date": end_date_raw,
                         "title": item.get("title"),
                         "item_id": item.get("itemId"),
                     }
@@ -227,6 +327,58 @@ class EbayPriceService:
                 continue
 
         return listings
+
+    def get_historical_listings_for_grade(
+        self,
+        card_name: str,
+        set_name: Optional[str],
+        grade_label: str,
+        start_date: datetime,
+        end_date: datetime,
+        max_listings: int = 200,
+    ) -> List[Dict]:
+        """
+        Fetch sold listings within a specific time window for a graded card.
+        """
+        if not self.enabled:
+            return []
+
+        start_iso = start_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+        end_iso = end_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        query_components = [card_name]
+        if set_name:
+            query_components.append(set_name)
+        query_components.append(grade_label)
+        query_components.append("pokemon card")
+        query = " ".join(filter(None, query_components))
+
+        filter_str = (
+            "conditions:{USED},buyingOptions:{SOLD},priceCurrency:USD,"
+            f"itemEndDate:[{start_iso}..{end_iso}]"
+        )
+
+        items = self._search_browse_api(
+            query,
+            filter_override=filter_str,
+            sort_override=None,
+            limit=max_listings,
+        )
+
+        graded_items = [
+            i
+            for i in items
+            if "PSA" in (i.get("title", "") or "").upper()
+            and self._title_matches(i.get("title") or "", card_name, set_name, grade_label)
+        ]
+        return self._extract_listings(
+            graded_items,
+            card_name,
+            set_name,
+            grade_label,
+            start_date=start_date.replace(tzinfo=None),
+            end_date=end_date.replace(tzinfo=None),
+        )
 
     def get_average_price_for_grade(
         self,

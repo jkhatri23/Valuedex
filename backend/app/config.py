@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql://localhost/pokedict"
+    database_url: str = "sqlite:///./pokedict.db"
     price_database_url: str = "sqlite:///./pricepoints.db"
     pricecharting_api_key: str = ""  # Used for Pokemon TCG API key (pokemontcg.io)
     pokemon_tcg_api_key: str = ""  # Alternative name for the same key
