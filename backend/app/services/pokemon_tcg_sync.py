@@ -14,6 +14,9 @@ from app.price_database import PriceSessionLocal
 from app.models.card import Card, PriceHistory
 from app.models.price_point import PricePoint
 from app.config import get_settings
+from app.services.ebay import ebay_price_service
+from app.services.grades import normalize_grade, grade_rank
+from app.services.pricepoints_migrations import ensure_pricepoints_grade_columns
 
 settings = get_settings()
 
@@ -29,7 +32,7 @@ class PokemonTCGSync:
         if self.api_key:
             self.headers["X-Api-Key"] = self.api_key
     
-    def fetch_all_cards(self, page_size: int = 250) -> List[Dict]:
+    def fetch_all_cards(self, page_size: int = 50, max_cards: Optional[int] = None) -> List[Dict]:
         """
         Fetch all cards from Pokemon TCG API using pagination.
         Returns a list of all cards.
@@ -39,6 +42,9 @@ class PokemonTCGSync:
         
         print(f"[SYNC] Starting to fetch all cards from Pokemon TCG API...")
         
+        MAX_RETRIES = 3
+        RETRY_DELAY = 5  # seconds
+
         while True:
             try:
                 url = f"{self.BASE_URL}/cards"
@@ -48,8 +54,24 @@ class PokemonTCGSync:
                 }
                 
                 print(f"[SYNC] Fetching page {page}...")
-                response = requests.get(url, params=params, headers=self.headers, timeout=60)
-                response.raise_for_status()
+                attempts = 0
+                while attempts < MAX_RETRIES:
+                    try:
+                        response = requests.get(
+                            url,
+                            params=params,
+                            headers=self.headers,
+                            timeout=60,
+                        )
+                        response.raise_for_status()
+                        break
+                    except requests.exceptions.RequestException as e:
+                        attempts += 1
+                        print(f"[SYNC] Error fetching page {page} (attempt {attempts}/{MAX_RETRIES}): {e}")
+                        if attempts >= MAX_RETRIES:
+                            print(f"[SYNC] Reached max retries for page {page}. Stopping fetch.")
+                            return all_cards
+                        time.sleep(RETRY_DELAY * attempts)
                 
                 data = response.json()
                 cards = data.get("data", [])
@@ -58,6 +80,9 @@ class PokemonTCGSync:
                     break
                 
                 all_cards.extend(cards)
+                if max_cards and len(all_cards) >= max_cards:
+                    all_cards = all_cards[:max_cards]
+                    break
                 print(f"[SYNC] Fetched {len(cards)} cards from page {page}. Total: {len(all_cards)}")
                 
                 # Check if there are more pages
@@ -80,6 +105,8 @@ class PokemonTCGSync:
     def extract_price(self, card: Dict) -> float:
         """Extract market price from card data"""
         try:
+            card_name = card.get("name", "")
+            set_name = card.get("set", {}).get("name")
             # Try TCGPlayer prices first (US market)
             if "tcgplayer" in card and "prices" in card["tcgplayer"]:
                 prices = card["tcgplayer"]["prices"]
@@ -100,6 +127,11 @@ class PokemonTCGSync:
                     return round(float(prices["averageSellPrice"]), 2)
                 elif "trendPrice" in prices and prices["trendPrice"]:
                     return round(float(prices["trendPrice"]), 2)
+
+            # Fallback to eBay sold listings
+            ebay_price = ebay_price_service.get_average_price(card_name, set_name)
+            if ebay_price:
+                return ebay_price
             
             return 0.0
         except Exception as e:
@@ -114,18 +146,25 @@ class PokemonTCGSync:
         price_type: str = "loose",
         volume: Optional[int] = None,
         source: str = "pokemontcg_api",
+        grade: Optional[str] = None,
+        collected_at: Optional[datetime] = None,
     ):
         if not price_db or price is None or price <= 0 or not card_external_id:
             return
 
         try:
+            normalized_grade = normalize_grade(grade) if grade else None
+            rank = grade_rank(normalized_grade) if normalized_grade else None
+
             price_point = PricePoint(
                 card_external_id=card_external_id,
                 price_type=price_type,
                 price=price,
                 volume=volume,
                 source=source,
-                collected_at=datetime.utcnow(),
+                grade=normalized_grade,
+                grade_rank=rank,
+                collected_at=collected_at or datetime.utcnow(),
             )
             price_db.add(price_point)
         except Exception as e:
@@ -254,16 +293,18 @@ class PokemonTCGSync:
             db.rollback()
             return None
     
-    def populate_database(self, batch_size: int = 100) -> Dict:
+    def populate_database(self, batch_size: int = 100, max_cards: int = 1000) -> Dict:
         """
         Populate the database with all cards from Pokemon TCG API.
         This is the initial population - can take a while!
         """
         print(f"[SYNC] Starting database population...")
+        # Ensure price_points table has grade / grade_rank columns before we write.
+        ensure_pricepoints_grade_columns()
         start_time = time.time()
         
         # Fetch all cards
-        all_cards = self.fetch_all_cards()
+        all_cards = self.fetch_all_cards(max_cards=max_cards)
         
         if not all_cards:
             print("[SYNC] No cards fetched. Aborting.")
@@ -328,16 +369,18 @@ class PokemonTCGSync:
             db.close()
             price_db.close()
     
-    def update_database(self, batch_size: int = 100) -> Dict:
+    def update_database(self, batch_size: int = 100, max_cards: int = 1000) -> Dict:
         """
         Update the database with latest card information and prices.
         This is the daily update job - faster than full population.
         """
         print(f"[SYNC] Starting daily database update...")
+        # Ensure price_points table has grade / grade_rank columns before we write.
+        ensure_pricepoints_grade_columns()
         start_time = time.time()
         
         # Fetch all cards (API will return latest data)
-        all_cards = self.fetch_all_cards()
+        all_cards = self.fetch_all_cards(max_cards=max_cards)
         
         if not all_cards:
             print("[SYNC] No cards fetched. Aborting.")

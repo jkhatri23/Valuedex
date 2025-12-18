@@ -71,7 +71,8 @@ async def predict_card_price(
         "trend_30d": features.trend_30d,
         "trend_90d": features.trend_90d,
         "trend_1y": features.trend_1y,
-        "volatility": features.price_volatility
+        "volatility": features.price_volatility,
+        "market_sentiment": features.market_sentiment
     }
     
     # Generate predictions
@@ -117,12 +118,30 @@ async def predict_card_price(
         "target_date": prediction["target_date"],
         "model_version": prediction["model_version"],
         "growth_rate": round(growth_rate, 2),
+        
+        # Multiple scenarios for risk management
+        "scenarios": prediction["scenarios"],
+        
+        # Comprehensive risk assessment
+        "risk_assessment": prediction["risk_assessment"],
+        
+        # Market factors influencing prediction
+        "market_factors": prediction["market_factors"],
+        
+        # Investment recommendation
+        "recommendation": prediction["recommendation"],
+        
+        # Timeline with scenarios
         "timeline": timeline,
+        
+        # Model insights
         "insights": {
             "time_series_contribution": prediction["time_series_prediction"],
             "feature_contribution": prediction["feature_prediction"],
             "investment_rating": features.investment_rating,
-            "investment_score": features.investment_score
+            "investment_score": features.investment_score,
+            "volatility": prediction["risk_assessment"]["volatility"],
+            "reward_risk_ratio": prediction["risk_assessment"]["reward_risk_ratio"]
         }
     }
 

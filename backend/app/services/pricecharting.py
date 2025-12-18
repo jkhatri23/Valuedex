@@ -1,7 +1,9 @@
 import requests
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
+from urllib.parse import quote_plus
 from app.config import get_settings
+from app.services.ebay import ebay_price_service
 import time
 import random
 
@@ -114,6 +116,13 @@ class PriceChartingService:
             # Extract real price
             price = self._extract_real_price(card)
             
+            query = f"{card.get('name', '')} {card.get('set', {}).get('name', '')}".strip()
+            tcgplayer_info = card.get("tcgplayer", {}) or {}
+            tcgplayer_url = tcgplayer_info.get("url")
+            if not tcgplayer_url and query:
+                tcgplayer_url = f"https://www.tcgplayer.com/search/pokemon/product?q={quote_plus(query)}&productLineName=pokemon"
+            ebay_url = f"https://www.ebay.com/sch/i.html?_nkw={quote_plus(query + ' pokemon card')}" if query else "https://www.ebay.com/sch/i.html?_nkw=pokemon+card"
+
             result = {
                 "id": card.get("id", ""),
                 "product-name": card.get("name", ""),
@@ -125,7 +134,9 @@ class PriceChartingService:
                 "rarity": card.get("rarity", ""),
                 "artist": card.get("artist", ""),
                 "number": card.get("number", ""),
-                "set_release": card.get("set", {}).get("releaseDate", "")
+                "set_release": card.get("set", {}).get("releaseDate", ""),
+                "tcgplayer_url": tcgplayer_url,
+                "ebay_url": ebay_url
             }
             
             # Cache the result
@@ -202,7 +213,9 @@ class PriceChartingService:
                 set_name = card.get("set", {}).get("name", "Pokemon TCG")
                 
                 # Get price from eBay (or estimate if eBay fails)
-                price = self._get_ebay_price(card_name, set_name)
+                price = ebay_price_service.get_average_price(card_name, set_name)
+                if not price:
+                    price = self._estimate_price_by_rarity(f"{card_name} {set_name}")
                 
                 results.append({
                     "id": card.get("id", ""),
@@ -253,6 +266,15 @@ class PriceChartingService:
                     price = round(float(prices["trendPrice"]), 2)
                     print(f"[PRICE] Cardmarket trend: ${price}")
                     return price
+
+            # Try eBay sold listings as fallback
+            ebay_price = ebay_price_service.get_average_price(
+                card.get("name", ""),
+                card.get("set", {}).get("name")
+            )
+            if ebay_price:
+                print(f"[PRICE] eBay sold average: ${ebay_price}")
+                return ebay_price
             
             # Fallback to estimate based on rarity
             rarity = card.get("rarity", "Common")
