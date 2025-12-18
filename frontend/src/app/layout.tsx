@@ -1,15 +1,23 @@
 import type { Metadata } from 'next'
-import { Inconsolata } from 'next/font/google'
+import { Inter, Space_Grotesk } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
 
-const inconsolata = Inconsolata({
+const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '700'],
+  weight: ['300', '400', '500', '600', '700', '800'],
   style: ['normal'],
   display: 'swap',
-  variable: '--font-inconsolata',
+  variable: '--font-inter',
+})
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  style: ['normal'],
+  display: 'swap',
+  variable: '--font-space-grotesk',
 })
 
 const themeInitScript = `
@@ -35,8 +43,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inconsolata.variable} dark`} suppressHydrationWarning>
-      <body className={inconsolata.className}>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} dark`} suppressHydrationWarning>
+      <body className={inter.className}>
         <Script
           id="valuedex-theme-init"
           strategy="beforeInteractive"

@@ -10,8 +10,9 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-inconsolata)', 'monospace'],
-        mono: ['var(--font-inconsolata)', 'monospace'],
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-space-grotesk)', 'system-ui', 'sans-serif'],
+        mono: ['ui-monospace', 'monospace'],
       },
       colors: {
         primary: {
@@ -43,6 +44,8 @@ const config: Config = {
         'fade-in': 'fadeIn 0.5s ease-in',
         'slide-up': 'slideUp 0.4s ease-out',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'float': 'float 3s ease-in-out infinite',
+        'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
