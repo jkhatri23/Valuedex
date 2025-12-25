@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import SearchBar from '@/components/SearchBar'
 import CardDisplay from '@/components/CardDisplay'
@@ -9,18 +9,62 @@ import PredictionPanel from '@/components/PredictionPanel'
 import InvestmentRating from '@/components/InvestmentRating'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useScrollAnimation } from '@/hooks/useScrollAnimation'
-import { TrendingUp, Search, Brain, Database, LineChart, Target } from 'lucide-react'
+import { TrendingUp, Search, Brain, Database, LineChart, Target, Sparkles } from 'lucide-react'
 
 export default function Home() {
   const [selectedCard, setSelectedCard] = useState<any>(null)
   const [cardDetails, setCardDetails] = useState<any>(null)
   const [latestPrediction, setLatestPrediction] = useState<any>(null)
+  const [featuredCards, setFeaturedCards] = useState<any[]>([])
   
   // Scroll animation hooks for different sections
   const statsAnimation = useScrollAnimation({ threshold: 0.2 })
   const featuresAnimation = useScrollAnimation({ threshold: 0.15 })
   const techStackAnimation = useScrollAnimation({ threshold: 0.2 })
   const footerAnimation = useScrollAnimation({ threshold: 0.3 })
+  const galleryAnimation = useScrollAnimation({ threshold: 0.2 })
+
+  // Fetch featured cards on mount
+  useEffect(() => {
+    const fetchFeaturedCards = async () => {
+      try {
+        // Fetch specific popular cards including Blaine's Charizard
+        const cardIds = [
+          'gym2-2',        // Blaine's Charizard
+          'base1-4',       // Charizard Base Set
+          'base1-15',      // Venusaur Base Set
+          'neo1-4',        // Typhlosion Neo Genesis
+          'base1-2'        // Blastoise Base Set
+        ]
+        
+        const cardPromises = cardIds.map(id => 
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/cards/${id}`)
+            .then(res => res.ok ? res.json() : null)
+            .catch(() => null)
+        )
+        
+        const cards = await Promise.all(cardPromises)
+        const validCards = cards.filter(card => card !== null)
+        
+        if (validCards.length > 0) {
+          setFeaturedCards(validCards)
+        } else {
+          // Fallback: try search endpoint
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/cards/search?q=charizard&limit=5`)
+          if (response.ok) {
+            const data = await response.json()
+            setFeaturedCards(data.slice(0, 5))
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching featured cards:', error)
+        // Set empty array to stop loading spinner
+        setFeaturedCards([])
+      }
+    }
+
+    fetchFeaturedCards()
+  }, [])
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-[#0a0a0a] dark:via-[#0d0d0d] dark:to-[#0a0a0a] relative">
@@ -93,18 +137,67 @@ export default function Home() {
           </div>
 
           {/* Search Section */}
-          <div className="max-w-3xl mx-auto mb-12 animate-slide-up relative z-10" style={{ animationDelay: '200ms', opacity: 0, animationFillMode: 'forwards' }}>
+          <div className="max-w-3xl mx-auto mb-20 animate-slide-up relative z-10" style={{ animationDelay: '200ms', opacity: 0, animationFillMode: 'forwards' }}>
             <SearchBar onSelectCard={(card) => setSelectedCard(card)} />
           </div>
 
-          {/* Scroll Indicator */}
-          <div className="flex justify-center mb-20 animate-bounce">
-            <div className="flex flex-col items-center text-gray-400 dark:text-gray-600 animate-fade-in" style={{ animationDelay: '1s', opacity: 0, animationFillMode: 'forwards' }}>
-              <span className="text-sm font-medium mb-2">Scroll to explore</span>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
+          {/* Featured Cards Gallery */}
+          <div 
+            ref={galleryAnimation.ref}
+            className={`max-w-6xl mx-auto mb-32 px-4 transition-all duration-1000 ${
+              galleryAnimation.isVisible ? 'scroll-visible' : 'scroll-hidden'
+            }`}
+          >
+            <div className="text-center mb-12">
+              <div className="flex items-center justify-center space-x-2 mb-3">
+                <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">Featured Cards</h3>
+              </div>
+              <p className="text-gray-600 dark:text-white/70 font-light text-lg">Explore popular cards and their current market values</p>
             </div>
+
+            {featuredCards.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                {featuredCards.map((card, index) => (
+                  <button
+                    key={card.id}
+                    onClick={() => setSelectedCard(card)}
+                    className="group bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg p-5 hover:scale-105 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-xl transition-all duration-300"
+                    style={{ 
+                      transitionDelay: `${index * 50}ms`,
+                      animationDelay: `${index * 100}ms`
+                    }}
+                  >
+                    {card.image_url && (
+                      <div className="mb-4 rounded-lg overflow-hidden bg-gray-100 dark:bg-white/5 aspect-[2.5/3.5]">
+                        <img
+                          src={card.image_url}
+                          alt={card.name}
+                          className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
+                        />
+                      </div>
+                    )}
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors min-h-[2.5rem]">
+                      {card.name}
+                    </h4>
+                    <p className="text-xs text-gray-500 dark:text-white/60 mb-3">{card.set_name}</p>
+                    {card.current_price > 0 ? (
+                      <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                        ${card.current_price.toFixed(2)}
+                      </div>
+                    ) : (
+                      <div className="text-sm font-semibold text-gray-400 dark:text-white/40 italic">
+                        Price Coming Soon
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500 dark:text-white/50">
+                <p className="mb-2">Unable to load featured cards</p>
+                <p className="text-sm">Try searching for cards above</p>
+              </div>
+            )}
           </div>
 
           {/* Stats Section */}
@@ -161,7 +254,7 @@ export default function Home() {
             <div className="text-center mb-12">
               <h3 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">How We Predict</h3>
               <p className="text-gray-600 dark:text-white/70 text-lg font-light max-w-2xl mx-auto">
-                Advanced crypto-style forecasting with comprehensive risk analysis
+                Advanced forecasting with comprehensive risk analysis
               </p>
             </div>
 
@@ -173,7 +266,7 @@ export default function Home() {
                 }`}
                 style={{ transitionDelay: '100ms' }}
               >
-                <div className="bg-blue-500/10 dark:bg-blue-400/10 w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <div className=" w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                   <LineChart className="w-8 h-8 text-blue-500 dark:text-blue-400" />
                 </div>
                 <h4 className="text-gray-900 dark:text-white font-semibold text-lg mb-2">Exponential Smoothing</h4>
@@ -186,7 +279,7 @@ export default function Home() {
                 }`}
                 style={{ transitionDelay: '200ms' }}
               >
-                <div className="bg-purple-500/10 dark:bg-purple-400/10 w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <div className=" w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                   <Brain className="w-8 h-8 text-purple-500 dark:text-purple-400" />
                 </div>
                 <h4 className="text-gray-900 dark:text-white font-semibold text-lg mb-2">Monte Carlo Simulation</h4>
@@ -199,7 +292,7 @@ export default function Home() {
                 }`}
                 style={{ transitionDelay: '300ms' }}
               >
-                <div className="bg-green-500/10 dark:bg-green-400/10 w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <div className=" w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                   <Database className="w-8 h-8 text-green-500 dark:text-green-400" />
                 </div>
                 <h4 className="text-gray-900 dark:text-white font-semibold text-lg mb-2">VWAP Analysis</h4>
@@ -212,7 +305,7 @@ export default function Home() {
                 }`}
                 style={{ transitionDelay: '400ms' }}
               >
-                <div className="bg-orange-500/10 dark:bg-orange-400/10 w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <div className=" w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                   <Target className="w-8 h-8 text-orange-500 dark:text-orange-400" />
                 </div>
                 <h4 className="text-gray-900 dark:text-white font-semibold text-lg mb-2">Multi-Scenario</h4>
@@ -243,7 +336,7 @@ export default function Home() {
                   <p className="font-semibold text-sm">Market Factors</p>
                 </div>
                 <div className="text-gray-400">→</div>
-                <div className="text-center bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-md shadow-lg hover:scale-105 transition-transform">
+                <div className="text-center bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-md shadow-lg hover:scale-105 transition-transform">
                   <p className="text-xs mb-1 font-semibold uppercase tracking-wide opacity-90">Result</p>
                   <p className="font-bold text-sm">ML Prediction</p>
                 </div>
