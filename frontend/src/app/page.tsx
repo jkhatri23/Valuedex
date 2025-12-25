@@ -23,9 +23,26 @@ export default function Home() {
   const footerAnimation = useScrollAnimation({ threshold: 0.3 })
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-[#0a0a0a] dark:via-[#0d0d0d] dark:to-[#0a0a0a]">
+    <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-[#0a0a0a] dark:via-[#0d0d0d] dark:to-[#0a0a0a] relative">
+      {/* Full-Width Background Image and Gradient - Only shown when no card is selected */}
+      {!selectedCard && (
+        <div className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+          <div 
+            className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat opacity-40 dark:opacity-15"
+            style={{ 
+              backgroundImage: 'url(/hero-background.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: 'blur(2px)'
+            }}
+          />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-white/80 via-white/60 to-white/90 dark:from-[#0a0a0a]/80 dark:via-[#0a0a0a]/60 dark:to-[#0a0a0a]/90" />
+        </div>
+      )}
+
       {/* Header */}
-      <header className="bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10 sticky top-0 z-50 animate-slide-up" style={{ animationDelay: '0ms', opacity: 0, animationFillMode: 'forwards' }}>
+      <header className="bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10 sticky top-0 z-50 animate-slide-up relative" style={{ animationDelay: '0ms', opacity: 0, animationFillMode: 'forwards' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -53,7 +70,7 @@ export default function Home() {
 
       {/* Hero Section */}
       {!selectedCard && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative" style={{ zIndex: 1 }}>
           {/* Decorative Background Elements */}
           <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
@@ -238,7 +255,7 @@ export default function Home() {
 
       {/* Card Details Section */}
       {selectedCard && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative" style={{ zIndex: 1 }}>
           <div className="mb-6">
             <button
               onClick={() => {
