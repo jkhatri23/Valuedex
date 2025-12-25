@@ -136,7 +136,6 @@ export default function InvestmentRating({ features, prediction }: InvestmentRat
   return (
     <div className="card">
 
-
       {/* Key Factors */}
       <div className="space-y-4 mb-6">
         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Key Factors</h4>
@@ -213,6 +212,21 @@ export default function InvestmentRating({ features, prediction }: InvestmentRat
             <div className="text-xs text-gray-500 dark:text-white/60 mt-1">1 Year</div>
           </div>
         </div>
+      </div>
+
+      {/* Volatility */}
+      <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg dark:bg-white/5 dark:border-white/10">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-900 dark:text-white">Price Volatility</span>
+          <span className="text-sm font-semibold text-blue-600 dark:text-blue-300">
+            {features.volatility.toFixed(1)}%
+          </span>
+        </div>
+        <p className="text-xs text-gray-600 dark:text-white/70 mt-2">
+          {features.volatility < 10 && 'Low volatility - stable investment'}
+          {features.volatility >= 10 && features.volatility < 25 && 'Moderate volatility - balanced risk/reward'}
+          {features.volatility >= 25 && 'High volatility - higher risk but potential for gains'}
+        </p>
       </div>
     </div>
   )

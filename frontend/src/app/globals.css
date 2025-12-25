@@ -6,12 +6,18 @@
   --foreground-rgb: 17, 24, 39;
   --background-start-rgb: 249, 250, 251;
   --background-end-rgb: 255, 255, 255;
+  --font-inter: 'Inter', sans-serif;
+  --font-space-grotesk: 'Space Grotesk', sans-serif;
 }
 
 .dark {
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 10, 10, 10;
   --background-end-rgb: 18, 18, 18;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -23,34 +29,82 @@ body {
     )
     rgb(var(--background-start-rgb));
   min-height: 100vh;
+  font-family: var(--font-inter);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-space-grotesk);
 }
 
 @layer components {
   .card {
-    @apply bg-white/95 text-gray-900 rounded-2xl shadow-lg p-6 transition-shadow duration-300 border border-gray-100 backdrop-blur;
-    @apply dark:bg-[#050505] dark:text-white dark:shadow-lg dark:shadow-black/60 dark:border-white/15 dark:backdrop-blur-md;
+    @apply bg-white/60 dark:bg-white/5 backdrop-blur-sm text-gray-900 dark:text-white rounded-md shadow-sm border border-gray-200 dark:border-white/10 p-6 transition-all duration-300 hover:shadow-md;
   }
 
   .btn-primary {
-    @apply bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md;
+    @apply bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 px-6 rounded-md hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-sm hover:shadow-lg hover:scale-105;
   }
 
   .btn-secondary {
-    @apply bg-gray-100 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-200 transition-all duration-200;
-    @apply dark:bg-white/10 dark:text-white dark:hover:bg-white/20;
+    @apply bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white font-medium py-2 px-4 rounded-md hover:bg-gray-200 dark:hover:bg-white/20 transition-all duration-200;
   }
 
   .glass-effect {
-    @apply bg-white/90 backdrop-blur-sm border border-gray-200/50;
-    @apply dark:bg-white/5 dark:border-white/10;
+    @apply bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10;
   }
 
   .animate-fade-in {
-    animation: fadeIn 0.5s ease-in;
+    animation: fadeIn 0.6s ease-in;
   }
 
   .animate-slide-up {
-    animation: slideUp 0.5s ease-out;
+    animation: slideUp 0.6s ease-out;
+  }
+
+  .animate-slide-left {
+    animation: slideLeft 0.8s ease-out;
+  }
+
+  .animate-slide-right {
+    animation: slideRight 0.8s ease-out;
+  }
+
+  .animate-scale-up {
+    animation: scaleUp 0.7s ease-out;
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.8s ease-out;
+  }
+
+  /* Scroll animations - initial hidden state */
+  .scroll-hidden {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  }
+
+  .scroll-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .scroll-hidden-left {
+    opacity: 0;
+    transform: translateX(-50px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  }
+
+  .scroll-hidden-right {
+    opacity: 0;
+    transform: translateX(50px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  }
+
+  .scroll-hidden-scale {
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
   }
 
   @keyframes fadeIn {
@@ -65,11 +119,87 @@ body {
   @keyframes slideUp {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(20px);
     }
     to {
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  @keyframes slideLeft {
+    from {
+      opacity: 0;
+      transform: translateX(50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideRight {
+    from {
+      opacity: 0;
+      transform: translateX(-50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes scaleUp {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes bounceIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    70% {
+      transform: scale(0.9);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
   }
 }
