@@ -4,9 +4,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 })
 
 export interface Card {
@@ -42,20 +40,13 @@ export interface CardDetails {
   }
 }
 
-export type CardCondition =
-  | 'Near Mint'
-  | 'PSA 6'
-  | 'PSA 7'
-  | 'PSA 8'
-  | 'PSA 9'
-  | 'PSA 10'
+export type CardCondition = 'Near Mint' | 'PSA 6' | 'PSA 7' | 'PSA 8' | 'PSA 9' | 'PSA 10'
 
 export interface PriceHistory {
   date: string
   price: number
   volume?: number
   grade?: string | null
-  source?: string
 }
 
 export interface Prediction {
@@ -69,15 +60,11 @@ export interface Prediction {
   target_date: string
   growth_rate: number
   model_version: string
-  
-  // Multiple scenarios
   scenarios: {
     conservative: number
     moderate: number
     aggressive: number
   }
-  
-  // Comprehensive risk assessment
   risk_assessment: {
     risk_level: 'low' | 'moderate' | 'high'
     volatility: number
@@ -85,19 +72,13 @@ export interface Prediction {
     upside_potential_pct: number
     reward_risk_ratio: number
   }
-  
-  // Market factors
   market_factors: {
     sentiment_multiplier: number
     popularity_score: number
     market_sentiment: number | null
     current_trend: number
   }
-  
-  // Investment recommendation
   recommendation: 'strong_buy' | 'buy' | 'hold' | 'consider_selling' | 'sell'
-  
-  // Timeline with scenarios
   timeline: Array<{
     predicted_price: number
     years_ahead: number
@@ -110,7 +91,6 @@ export interface Prediction {
     risk_level: string
     recommendation: string
   }>
-  
   insights?: {
     investment_rating: string
     investment_score: number
@@ -121,69 +101,51 @@ export interface Prediction {
   }
 }
 
-export const searchCards = async (query: string): Promise<Card[]> => {
+export async function searchCards(query: string): Promise<Card[]> {
   try {
-    const response = await api.get(`/api/cards/search?q=${encodeURIComponent(query)}`)
-    console.log('API Response:', response.data)
-    const cards = response.data.cards || response.data || []
-    console.log('Parsed cards:', cards)
-    return cards
-  } catch (error: any) {
-    console.error('Error searching cards:', error)
-    if (error.response) {
-      console.error('Response error:', error.response.data)
-    }
+    const { data } = await api.get(`/api/cards/search?q=${encodeURIComponent(query)}`)
+    return data.cards || data || []
+  } catch {
     return []
   }
 }
 
-export const getCardDetails = async (cardId: string): Promise<CardDetails | null> => {
+export async function getCardDetails(cardId: string): Promise<CardDetails | null> {
   try {
-    const response = await api.get(`/api/cards/${cardId}`)
-    return response.data
-  } catch (error) {
-    console.error('Error fetching card details:', error)
+    const { data } = await api.get(`/api/cards/${cardId}`)
+    return data
+  } catch {
     return null
   }
 }
 
-export const getPriceHistory = async (
-  cardId: string,
-  condition?: CardCondition
-): Promise<PriceHistory[]> => {
+export async function getPriceHistory(cardId: string, condition?: CardCondition): Promise<PriceHistory[]> {
   try {
-    const response = await api.get(`/api/cards/${cardId}/prices`, {
+    const { data } = await api.get(`/api/cards/${cardId}/prices`, {
       params: condition ? { grade: condition } : {},
     })
-    return response.data.prices
-  } catch (error) {
-    console.error('Error fetching price history:', error)
+    return data.prices
+  } catch {
     return []
   }
 }
 
-export const getPrediction = async (cardId: string, yearsAhead: number = 3): Promise<Prediction | null> => {
+export async function getPrediction(cardId: string, yearsAhead: number = 3): Promise<Prediction | null> {
   try {
-    const response = await api.post('/api/predict', {
-      card_id: cardId,
-      years_ahead: yearsAhead,
-    })
-    return response.data
-  } catch (error) {
-    console.error('Error getting prediction:', error)
+    const { data } = await api.post('/api/predict', { card_id: cardId, years_ahead: yearsAhead })
+    return data
+  } catch {
     return null
   }
 }
 
-export const getInvestmentRating = async (cardId: string) => {
+export async function getInvestmentRating(cardId: string) {
   try {
-    const response = await api.get(`/api/cards/${cardId}/rating`)
-    return response.data
-  } catch (error) {
-    console.error('Error fetching investment rating:', error)
+    const { data } = await api.get(`/api/cards/${cardId}/rating`)
+    return data
+  } catch {
     return null
   }
 }
 
 export default api
-

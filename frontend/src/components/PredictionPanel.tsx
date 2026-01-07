@@ -93,7 +93,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
               onClick={() => setYearsAhead(year)}
               className={`px-5 py-2.5 rounded-lg font-medium transition-all ${
                 yearsAhead === year
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/20 dark:border-white/20'
               }`}
             >
