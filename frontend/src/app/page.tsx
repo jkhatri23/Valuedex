@@ -384,7 +384,11 @@ export default function Home() {
               <div className="lg:col-span-2 space-y-6">
                 {cardDetails && (
                   <>
-                    <PriceChart cardId={selectedCard.id} />
+                    <PriceChart 
+                      cardId={selectedCard.id} 
+                      cardName={selectedCard.name}
+                      setName={selectedCard.set_name}
+                    />
                     <PredictionPanel 
                       cardId={selectedCard.id}
                       cardName={selectedCard.name}
@@ -409,7 +413,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <p className="text-gray-600 dark:text-white/70 mb-3 font-light">
-              Data powered by PriceCharting API • Predictions by Advanced ML Models
+              Data powered by eBay API &amp; Pokemon TCG API • Predictions by Advanced ML Models
             </p>
             <p className="text-sm text-gray-500 dark:text-white/50 font-light max-w-3xl mx-auto">
               For entertainment and educational purposes only. Not financial advice. 

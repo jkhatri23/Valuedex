@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     ebay_app_id: str = ""
     ebay_dev_id: str = ""
     ebay_cert_id: str = ""
+    psa_api_token: str = ""  # PSA grading API for accurate price data
     debug: bool = True
     host: str = "0.0.0.0"
     port: int = 8000

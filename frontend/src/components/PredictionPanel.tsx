@@ -18,14 +18,20 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
   const [yearsAhead, setYearsAhead] = useState(3)
 
   const handlePredict = async () => {
+    console.log('handlePredict called with cardId:', cardId, 'cardName:', cardName, 'yearsAhead:', yearsAhead)
     setIsLoading(true)
-    const result = await getPrediction(cardId, yearsAhead)
-    if (result) {
-      setPrediction(result)
-      // Share prediction data with parent component
-      onPredictionGenerated?.(result)
+    try {
+      const result = await getPrediction(cardId || '', yearsAhead, cardName || '')
+      console.log('Prediction result:', result)
+      if (result) {
+        setPrediction(result)
+        onPredictionGenerated?.(result)
+      }
+    } catch (error) {
+      console.error('Prediction failed:', error)
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
 
   // Prepare chart data with multiple scenarios
