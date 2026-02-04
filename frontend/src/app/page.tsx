@@ -117,7 +117,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative" style={{ zIndex: 1 }}>
           {/* Decorative Background Elements */}
           <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
           
           {/* Main Hero */}
           <div className="text-center mb-16 animate-fade-in relative z-10">
@@ -126,7 +126,7 @@ export default function Home() {
                 Predict Your Card's
               </span>
               <br />
-              <span className="inline-block bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent animate-slide-up" style={{ animationDelay: '300ms', opacity: 0, animationFillMode: 'forwards' }}>
+              <span className="inline-block text-blue-500 dark:text-blue-400 animate-slide-up" style={{ animationDelay: '300ms', opacity: 0, animationFillMode: 'forwards' }}>
                 Future Value
               </span>
             </h2>
@@ -161,7 +161,7 @@ export default function Home() {
                   <button
                     key={card.id}
                     onClick={() => setSelectedCard(card)}
-                    className="group bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg p-5 hover:scale-105 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-xl transition-all duration-300"
+                    className="group bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg p-5 hover:scale-[1.02] hover:border-gray-300 dark:hover:border-white/20 transition-all duration-300"
                     style={{ 
                       transitionDelay: `${index * 50}ms`,
                       animationDelay: `${index * 100}ms`
@@ -176,12 +176,12 @@ export default function Home() {
                         />
                       </div>
                     )}
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors min-h-[2.5rem]">
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors min-h-[2.5rem]">
                       {card.name}
                     </h4>
                     <p className="text-xs text-gray-500 dark:text-white/60 mb-3">{card.set_name}</p>
                     {card.current_price > 0 ? (
-                      <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                      <div className="text-lg font-bold text-gray-900 dark:text-white">
                         ${card.current_price.toFixed(2)}
                       </div>
                     ) : (
@@ -216,8 +216,8 @@ export default function Home() {
                   Simulations per Prediction
                 </div>
               </div>
-              <div className="group text-center p-6 bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md hover:scale-105 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-lg transition-all duration-300 cursor-default" style={{ transitionDelay: '100ms' }}>
-                <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-purple-500 transition-colors">
+              <div className="group text-center p-6 bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md hover:scale-105 hover:border-gray-300 dark:hover:border-white/20 hover:shadow-lg transition-all duration-300 cursor-default" style={{ transitionDelay: '100ms' }}>
+                <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-500 transition-colors">
                   3
                 </div>
                 <div className="text-sm text-gray-600 dark:text-white/60 font-medium">
@@ -274,13 +274,13 @@ export default function Home() {
               </div>
 
               <div 
-                className={`group bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md p-8 text-center hover:border-purple-500 dark:hover:border-purple-400 transition-all duration-500 ${
+                className={`group bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md p-8 text-center hover:border-gray-300 dark:hover:border-white/20 transition-all duration-500 ${
                   featuresAnimation.isVisible ? 'scroll-visible' : 'scroll-hidden-scale'
                 }`}
                 style={{ transitionDelay: '200ms' }}
               >
                 <div className=" w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Brain className="w-8 h-8 text-purple-500 dark:text-purple-400" />
+                  <Brain className="w-8 h-8 text-gray-600 dark:text-gray-400" />
                 </div>
                 <h4 className="text-gray-900 dark:text-white font-semibold text-lg mb-2">Monte Carlo Simulation</h4>
                 <p className="text-gray-600 dark:text-white/70 text-sm font-light">1,000 simulations for risk assessment</p>
@@ -321,12 +321,12 @@ export default function Home() {
               }`}
             >
               <div className="flex flex-col md:flex-row items-center justify-center gap-4 text-gray-900 dark:text-white flex-wrap">
-                <div className="text-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 px-6 py-3 rounded-md border border-blue-200 dark:border-blue-500/30 hover:scale-105 transition-transform">
+                <div className="text-center bg-gray-50 dark:bg-white/5 px-6 py-3 rounded-md border border-gray-200 dark:border-white/10 hover:scale-105 transition-transform">
                   <p className="text-xs text-gray-600 dark:text-white/60 mb-1 font-semibold uppercase tracking-wide">Step 1</p>
                   <p className="font-semibold text-sm">Exponential Smoothing</p>
                 </div>
                 <div className="text-gray-400">→</div>
-                <div className="text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 px-6 py-3 rounded-md border border-purple-200 dark:border-purple-500/30 hover:scale-105 transition-transform">
+                <div className="text-center bg-gray-50 dark:bg-white/5 px-6 py-3 rounded-md border border-gray-200 dark:border-white/10 hover:scale-105 transition-transform">
                   <p className="text-xs text-gray-600 dark:text-white/60 mb-1 font-semibold uppercase tracking-wide">Step 2</p>
                   <p className="font-semibold text-sm">Monte Carlo (GBM)</p>
                 </div>
@@ -356,13 +356,13 @@ export default function Home() {
                 setCardDetails(null)
                 setLatestPrediction(null)
               }}
-              className="text-gray-600 hover:text-purple-600 dark:text-white/70 dark:hover:text-purple-400 font-medium flex items-center space-x-2 transition-colors"
+              className="text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white font-medium flex items-center space-x-2 transition-colors"
             >
               <span>← Back to Search</span>
             </button>
           </div>
           
-          <div className="bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md p-8">
+          <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl p-8 border border-black/[0.03] dark:border-white/[0.03]">
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left Column - Card Info */}
@@ -384,7 +384,11 @@ export default function Home() {
               <div className="lg:col-span-2 space-y-6">
                 {cardDetails && (
                   <>
-                    <PriceChart cardId={selectedCard.id} />
+                    <PriceChart 
+                      cardId={selectedCard.id} 
+                      cardName={selectedCard.name}
+                      setName={selectedCard.set_name}
+                    />
                     <PredictionPanel 
                       cardId={selectedCard.id}
                       cardName={selectedCard.name}
@@ -409,7 +413,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <p className="text-gray-600 dark:text-white/70 mb-3 font-light">
-              Data powered by PriceCharting API • Predictions by Advanced ML Models
+              Data powered by eBay API &amp; Pokemon TCG API • Predictions by Advanced ML Models
             </p>
             <p className="text-sm text-gray-500 dark:text-white/50 font-light max-w-3xl mx-auto">
               For entertainment and educational purposes only. Not financial advice. 

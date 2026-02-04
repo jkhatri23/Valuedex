@@ -9,7 +9,7 @@ interface UseScrollAnimationOptions {
 export function useScrollAnimation(options: UseScrollAnimationOptions = {}) {
   const {
     threshold = 0.1,
-    rootMargin = '0px 0px -100px 0px',
+    rootMargin = '0px 0px -50px 0px',
     triggerOnce = true,
   } = options
 
@@ -19,6 +19,22 @@ export function useScrollAnimation(options: UseScrollAnimationOptions = {}) {
   useEffect(() => {
     const element = ref.current
     if (!element) return
+
+    // Immediately check if in viewport
+    const checkVisibility = () => {
+      const rect = element.getBoundingClientRect()
+      const windowHeight = window.innerHeight
+      if (rect.top < windowHeight + 100 && rect.bottom > -100) {
+        setIsVisible(true)
+        return true
+      }
+      return false
+    }
+
+    // Check immediately
+    if (checkVisibility() && triggerOnce) {
+      return
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -36,10 +52,14 @@ export function useScrollAnimation(options: UseScrollAnimationOptions = {}) {
 
     observer.observe(element)
 
+    // Fallback: always show after 800ms to prevent blank sections
+    const fallback = setTimeout(() => {
+      setIsVisible(true)
+    }, 800)
+
     return () => {
-      if (element) {
-        observer.unobserve(element)
-      }
+      observer.unobserve(element)
+      clearTimeout(fallback)
     }
   }, [threshold, rootMargin, triggerOnce])
 

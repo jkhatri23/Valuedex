@@ -1,23 +1,15 @@
 import type { Metadata } from 'next'
-import { Inter, Space_Grotesk } from 'next/font/google'
+import { Lato } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
 
-const inter = Inter({
+const lato = Lato({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ['300', '400', '700', '900'],
   style: ['normal'],
   display: 'swap',
-  variable: '--font-inter',
-})
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  style: ['normal'],
-  display: 'swap',
-  variable: '--font-space-grotesk',
+  variable: '--font-main',
 })
 
 const themeInitScript = `
@@ -43,8 +35,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} dark`} suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang="en" className={`${lato.variable} dark`} suppressHydrationWarning>
+      <body className={lato.className}>
         <Script
           id="valuedex-theme-init"
           strategy="beforeInteractive"

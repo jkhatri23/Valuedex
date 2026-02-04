@@ -1,34 +1,49 @@
-# How to Add Your PriceCharting API Key
+# How to Add Your eBay API Keys
 
-## Step 1: Get Your API Key
+The app now uses **eBay's Browse API** for real-time Pokemon card prices and data, including grade-specific pricing (PSA 10, PSA 9, etc.).
 
-1. Visit: **https://www.pricecharting.com/api-documentation**
-2. Click **"Get API Key"** or **"Sign Up"**
-3. Create a free account
-4. Copy your API key (it will look like: `abc123def456...`)
+## Step 1: Get Your eBay API Credentials
 
-## Step 2: Add API Key to Your App
+1. Visit: **https://developer.ebay.com/**
+2. Sign in or create a developer account
+3. Go to **My Account** → **Application Access Keys**
+4. Create a new application (Production environment for real data)
+5. You'll need three credentials:
+   - **App ID** (Client ID)
+   - **Dev ID** 
+   - **Cert ID** (Client Secret)
+
+## Step 2: Add API Keys to Your App
 
 ### Option A: Using .env file (Recommended)
 
-Open `backend/.env` and update the API key line:
+Create or edit `backend/.env`:
 
 ```env
 DATABASE_URL=sqlite:///./pokedict.db
-PRICECHARTING_API_KEY=paste_your_api_key_here
+PRICE_DATABASE_URL=sqlite:///./pricepoints.db
 DEBUG=True
+
+# eBay API Credentials (Browse API)
+EBAY_APP_ID=your-app-id-here
+EBAY_DEV_ID=your-dev-id-here
+EBAY_CERT_ID=your-cert-id-here
 ```
 
 ### Option B: Using Terminal
 
 ```bash
 cd backend
-echo "PRICECHARTING_API_KEY=your_api_key_here" >> .env
+cat >> .env << EOF
+EBAY_APP_ID=your-app-id-here
+EBAY_DEV_ID=your-dev-id-here
+EBAY_CERT_ID=your-cert-id-here
+EOF
 ```
 
 ## Step 3: Restart the Backend
 
-The backend auto-reloads, so it should pick up the new API key automatically!
+The backend auto-reloads, so it should pick up the new API keys automatically!
 
 If not, restart it:
 
@@ -43,58 +58,78 @@ uvicorn app.main:app --reload
 ## How to Test It Works
 
 1. Search for any Pokemon card in the app
-2. Check your backend terminal - you should see:
-   ```
-   [API] Searching PriceCharting for: charizard
-   [API] Found 15 cards from PriceCharting
-   ```
+2. Check your backend terminal - you should see successful API calls
+3. Results will include `"source": "ebay"` when working correctly
 
-3. If you see `[INFO] No API key found - using mock data`, the key isn't set correctly
+## API Features
 
-## API Key Features
+With eBay API configured, you get:
 
-With a real API key, you get:
+✅ **Real-time prices** from actual eBay listings  
+✅ **Grade-specific pricing** (PSA 10, PSA 9, PSA 8, etc.)  
+✅ **Rarity detection** from listings  
+✅ **Market average prices** (trimmed mean)  
+✅ **Historical sold data** for trends  
 
-✅ **Real-time prices** for ALL Pokemon cards
-✅ **Thousands of cards** from all sets
-✅ **Actual market data** from PriceCharting
-✅ **Historical price trends**
-✅ **1,000 requests/day** (free tier)
+## New Endpoints
 
-## Free vs Mock Data
+### Search with Grades
+```
+GET /api/cards/search?q=charizard&include_grades=true
+```
+Returns cards with `prices_by_grade` showing prices for each PSA grade.
 
-| Feature | With API Key | Without API Key |
-|---------|--------------|-----------------|
-| Card Search | Real data from thousands of cards | 10 mock cards only |
-| Prices | Live market prices | Simulated prices |
-| Price History | Actual historical data | Generated trends |
-| Card Coverage | All Pokemon TCG cards | Limited selection |
+### Get Prices by Grade
+```
+GET /api/cards/{card_id}/grades?card_name=Charizard&set_name=Base+Set
+```
+Returns detailed pricing for each grade level.
+
+## Example Response with Grades
+
+```json
+{
+  "cards": [{
+    "id": "abc123",
+    "name": "Charizard",
+    "set_name": "Base Set",
+    "current_price": 250.00,
+    "rarity": "Holo Rare",
+    "prices_by_grade": {
+      "PSA 10": {"average_price": 15000.00, "count": 5},
+      "PSA 9": {"average_price": 2500.00, "count": 12},
+      "PSA 8": {"average_price": 800.00, "count": 8},
+      "Ungraded": {"average_price": 250.00, "count": 20}
+    }
+  }],
+  "source": "ebay"
+}
+```
 
 ## Troubleshooting
 
-### "No API key found"
+### "eBay service not enabled"
 - Check `.env` file exists in `backend/` folder
+- Verify `EBAY_APP_ID` and `EBAY_CERT_ID` are set
 - Make sure there are no spaces around the `=` sign
-- Make sure API key has no extra quotes
 
-### "API error"
-- Check your API key is valid
-- Verify you haven't exceeded rate limits (1,000/day)
-- Check PriceCharting service status
+### "Failed to obtain OAuth token"
+- Verify your Cert ID (Client Secret) is correct
+- Check that your eBay app has the correct OAuth scope
+- Ensure you're using Production keys (not Sandbox) for real data
 
-### Still using mock data?
-- Restart the backend server
-- Check terminal logs for error messages
-- Verify `.env` file is in the correct location
+### Empty results?
+- eBay's Browse API may have rate limits
+- Try broader search terms
+- Check the backend logs for specific errors
 
-## Without API Key
+## Legacy: PriceCharting API (Optional)
 
-The app works great without an API key using realistic mock data!
-This is perfect for:
-- Testing the app
-- Development
-- Demonstrating features
-- Learning how it works
+If you prefer to use PriceCharting instead:
 
-You can always add the API key later when you're ready for real data!
+```env
+PRICECHARTING_API_KEY=your-key-here
+```
+
+Note: The app now defaults to eBay for real-time market data with grade support.
 

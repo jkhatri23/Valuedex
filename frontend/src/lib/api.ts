@@ -23,6 +23,7 @@ export interface CardDetails {
   rarity: string
   artist: string
   release_year: number
+  card_number?: string
   current_price: number
   image_url?: string
   tcgplayer_url?: string
@@ -40,13 +41,14 @@ export interface CardDetails {
   }
 }
 
-export type CardCondition = 'Near Mint' | 'PSA 6' | 'PSA 7' | 'PSA 8' | 'PSA 9' | 'PSA 10'
+export type CardCondition = 'Ungraded' | 'Near Mint' | 'PSA 6' | 'PSA 7' | 'PSA 8' | 'PSA 9' | 'PSA 10'
 
 export interface PriceHistory {
   date: string
   price: number
   volume?: number
   grade?: string | null
+  source?: string
 }
 
 export interface Prediction {
@@ -119,22 +121,37 @@ export async function getCardDetails(cardId: string): Promise<CardDetails | null
   }
 }
 
-export async function getPriceHistory(cardId: string, condition?: CardCondition): Promise<PriceHistory[]> {
+export async function getPriceHistory(
+  cardId: string, 
+  condition?: CardCondition,
+  cardName?: string,
+  setName?: string
+): Promise<PriceHistory[]> {
   try {
-    const { data } = await api.get(`/api/cards/${cardId}/prices`, {
-      params: condition ? { grade: condition } : {},
-    })
+    const params: Record<string, string> = {}
+    if (condition) params.grade = condition
+    if (cardName) params.card_name = cardName
+    if (setName) params.set_name = setName
+    
+    const { data } = await api.get(`/api/cards/${cardId}/prices`, { params })
     return data.prices
   } catch {
     return []
   }
 }
 
-export async function getPrediction(cardId: string, yearsAhead: number = 3): Promise<Prediction | null> {
+export async function getPrediction(cardId: string, yearsAhead: number = 3, cardName?: string): Promise<Prediction | null> {
   try {
-    const { data } = await api.post('/api/predict', { card_id: cardId, years_ahead: yearsAhead })
+    console.log('Predicting for cardId:', cardId, 'cardName:', cardName, 'years:', yearsAhead)
+    const { data } = await api.post('/api/predict', { 
+      card_id: cardId || '', 
+      card_name: cardName || '',
+      years_ahead: yearsAhead 
+    })
+    console.log('Prediction response:', data)
     return data
-  } catch {
+  } catch (error: any) {
+    console.error('Prediction error:', error?.response?.data || error?.message || error)
     return null
   }
 }
@@ -142,6 +159,60 @@ export async function getPrediction(cardId: string, yearsAhead: number = 3): Pro
 export async function getInvestmentRating(cardId: string) {
   try {
     const { data } = await api.get(`/api/cards/${cardId}/rating`)
+    return data
+  } catch {
+    return null
+  }
+}
+
+export interface GradeAnalysis {
+  grade: string
+  current_price: number
+  growth_12m: number
+  liquidity_score: number
+  rating: string
+}
+
+export interface PriceChartingComparison {
+  product_name: string
+  loose_price: number
+  cib_price: number
+  new_price: number
+  source: string
+  description: string
+}
+
+export interface AllGradesHistory {
+  card_id: string
+  card_name: string
+  set_name: string
+  grades: Record<string, {
+    history: PriceHistory[]
+    current_price: number
+    price_12m_ago: number
+    change_pct: number
+    data_points: number
+  }>
+  recommendations: {
+    best_value: string | null
+    best_growth: string | null
+    most_liquid: string | null
+    analysis: GradeAnalysis[]
+  }
+  pricecharting_comparison?: PriceChartingComparison | null
+}
+
+export async function getAllGradesHistory(
+  cardId: string,
+  cardName?: string,
+  setName?: string
+): Promise<AllGradesHistory | null> {
+  try {
+    const params: Record<string, string> = {}
+    if (cardName) params.card_name = cardName
+    if (setName) params.set_name = setName
+    
+    const { data } = await api.get(`/api/cards/${cardId}/all-grades-history`, { params })
     return data
   } catch {
     return null
