@@ -83,26 +83,26 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
   return (
     <div className="card">
       <div className="flex items-center space-x-3 mb-6">
-        <Sparkles className="w-6 h-6 text-purple-600" />
+        <Sparkles className="w-6 h-6 text-gray-600 dark:text-gray-400" />
         <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Future Price Prediction</h3>
       </div>
 
       {/* Prediction Controls */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 dark:bg-white/5 dark:border-white/10">
+      <div className="bg-white/30 border border-gray-100/50 rounded-lg p-6 mb-6 dark:bg-white/[0.02] dark:border-white/[0.04]">
         <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">
           Predict price in how many years?
         </label>
         <div className="flex items-center space-x-3 mb-4">
           {[1, 2, 3, 5].map((year) => (
-            <button
-              key={year}
-              onClick={() => setYearsAhead(year)}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${
-                yearsAhead === year
-                  ? 'bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/20 dark:border-white/20'
-              }`}
-            >
+              <button
+                key={year}
+                onClick={() => setYearsAhead(year)}
+                className={`px-5 py-2.5 rounded-lg font-medium transition-all ${
+                  yearsAhead === year
+                    ? 'bg-gray-800 dark:bg-gray-600 text-white'
+                    : 'bg-gray-50/50 text-gray-700 hover:bg-gray-100/50 border border-gray-200/50 dark:bg-white/[0.03] dark:text-white/70 dark:hover:bg-white/[0.06] dark:border-white/[0.04]'
+                }`}
+              >
               {year} {year === 1 ? 'Year' : 'Years'}
             </button>
           ))}
@@ -130,7 +130,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
       {prediction && (
         <div className="space-y-6 animate-fade-in">
           {/* Recommendation Badge */}
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6 dark:from-purple-900/20 dark:to-pink-900/20 dark:border-purple-500/30">
+          <div className="bg-gray-50/50 border border-gray-200/50 rounded-lg p-6 dark:bg-white/[0.02] dark:border-white/[0.05]">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-2">Investment Recommendation</div>
@@ -150,31 +150,31 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
           {/* Price Scenarios */}
           <div>
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-              <Target className="w-5 h-5 mr-2 text-purple-600" />
+              <Target className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
               Price Scenarios ({yearsAhead} Year{yearsAhead > 1 ? 's' : ''})
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-center dark:bg-white/5 dark:border-white/10">
+              <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-4 text-center dark:bg-white/[0.02] dark:border-white/[0.04]">
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-1">Current</div>
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-300">
                   ${prediction.current_price.toFixed(2)}
                 </div>
               </div>
-              <div className="bg-orange-50 border border-orange-100 rounded-lg p-4 text-center dark:bg-white/5 dark:border-white/10">
+              <div className="bg-orange-50/50 border border-orange-100/50 rounded-lg p-4 text-center dark:bg-white/[0.02] dark:border-white/[0.04]">
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-1">Conservative</div>
                 <div className="text-2xl font-bold text-orange-600 dark:text-orange-300">
                   ${prediction.scenarios.conservative.toFixed(2)}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-white/60 mt-1">25th percentile</div>
               </div>
-              <div className="bg-purple-50 border border-purple-100 rounded-lg p-4 text-center dark:bg-white/5 dark:border-white/10">
+              <div className="bg-gray-50/50 border border-gray-200/50 rounded-lg p-4 text-center dark:bg-white/[0.02] dark:border-white/[0.04]">
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-1">Moderate</div>
-                <div className="text-2xl font-bold text-purple-600 dark:text-purple-300">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   ${prediction.scenarios.moderate.toFixed(2)}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-white/60 mt-1">Most likely</div>
               </div>
-              <div className="bg-green-50 border border-green-100 rounded-lg p-4 text-center dark:bg-white/5 dark:border-white/10">
+              <div className="bg-green-50/50 border border-green-100/50 rounded-lg p-4 text-center dark:bg-white/[0.02] dark:border-white/[0.04]">
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-1">Aggressive</div>
                 <div className="text-2xl font-bold text-green-600 dark:text-green-300">
                   ${prediction.scenarios.aggressive.toFixed(2)}
@@ -204,16 +204,16 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
           {/* Risk Assessment */}
           <div>
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-              <Shield className="w-5 h-5 mr-2 text-purple-600" />
+              <Shield className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
               Risk Assessment
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white border border-gray-200 rounded-lg p-4 dark:bg-white/5 dark:border-white/10">
+              <div className="bg-white/30 border border-gray-100/50 rounded-lg p-4 dark:bg-white/[0.02] dark:border-white/[0.04]">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium text-gray-900 dark:text-white">Reward-Risk Ratio</span>
                   <BarChart3 className="w-4 h-4 text-gray-400" />
                 </div>
-                <div className="text-3xl font-bold text-purple-600 dark:text-purple-300">
+                <div className="text-3xl font-bold text-gray-900 dark:text-white">
                   {prediction.risk_assessment.reward_risk_ratio.toFixed(2)}x
                 </div>
                 <div className="text-xs text-gray-500 dark:text-white/60 mt-1">
@@ -222,7 +222,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
                    prediction.risk_assessment.reward_risk_ratio > 1.0 ? 'Fair' : 'Poor'}
                 </div>
               </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-4 dark:bg-white/5 dark:border-white/10">
+              <div className="bg-white/30 border border-gray-100/50 rounded-lg p-4 dark:bg-white/[0.02] dark:border-white/[0.04]">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium text-gray-900 dark:text-white">Volatility</span>
                   <Activity className="w-4 h-4 text-gray-400" />
@@ -232,7 +232,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
                 </div>
                 <div className="text-xs text-gray-500 dark:text-white/60 mt-1">Price stability</div>
               </div>
-              <div className="bg-red-50 border border-red-100 rounded-lg p-4 dark:bg-white/5 dark:border-white/10">
+              <div className="bg-red-50/50 border border-red-100/50 rounded-lg p-4 dark:bg-white/[0.02] dark:border-white/[0.04]">
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-1">Downside Risk</div>
                 <div className="text-2xl font-bold text-red-600 dark:text-red-300">
                   {prediction.risk_assessment.downside_risk_pct.toFixed(1)}%
@@ -250,7 +250,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
           </div>
 
           {/* Confidence Range */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 dark:bg-white/5 dark:border-white/10">
+          <div className="bg-gray-50/50 border border-gray-100/50 rounded-lg p-4 dark:bg-white/[0.02] dark:border-white/[0.04]">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium text-gray-900 dark:text-white">10-90% Confidence Range</span>
               <AlertCircle className="w-4 h-4 text-gray-400" />
@@ -342,12 +342,12 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
           </div>
 
           {/* Market Factors */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 dark:bg-white/5 dark:border-white/10">
+          <div className="bg-white/30 border border-gray-100/50 rounded-lg p-6 dark:bg-white/[0.02] dark:border-white/[0.04]">
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Market Factors</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <span className="text-sm text-gray-600 dark:text-white/70">Popularity Score</span>
-                <div className="text-2xl font-bold text-purple-600 dark:text-purple-300">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {prediction.market_factors.popularity_score.toFixed(0)}/100
                 </div>
               </div>
@@ -377,7 +377,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
 
           {/* Investment Insights */}
           {prediction.insights && (
-            <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6 dark:from-purple-900/20 dark:to-blue-900/20 dark:border-purple-500/30">
+            <div className="bg-gray-50/50 border border-gray-200/50 rounded-lg p-6 dark:bg-white/[0.02] dark:border-white/[0.05]">
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">AI Analysis</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white/60 rounded-lg p-4 dark:bg-black/20">
@@ -396,7 +396,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
                 </div>
                 <div className="bg-white/60 rounded-lg p-4 dark:bg-black/20">
                   <span className="text-sm text-gray-600 dark:text-white/70">Investment Score</span>
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-300 mt-2">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                     {prediction.insights.investment_score.toFixed(1)}/10
                   </div>
                 </div>

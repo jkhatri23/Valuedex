@@ -56,7 +56,7 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
           {isLoading ? (
-            <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
+            <Loader2 className="w-6 h-6 text-gray-500 animate-spin" />
           ) : (
             <Search className="w-6 h-6 text-gray-400 dark:text-gray-500" />
           )}
@@ -66,7 +66,7 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search for any Pokémon card..."
-          className="w-full pl-14 pr-6 py-5 text-lg border-2 border-gray-200 dark:border-white/10 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all text-gray-900 placeholder:text-gray-400 bg-white dark:bg-[#1a1a1a] dark:text-white dark:placeholder:text-gray-500 shadow-sm hover:shadow-md"
+          className="w-full pl-14 pr-6 py-5 text-lg border-2 border-gray-200 dark:border-white/10 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder:text-gray-400 bg-white dark:bg-[#1a1a1a] dark:text-white dark:placeholder:text-gray-500 shadow-sm hover:shadow-md"
         />
       </div>
 
@@ -77,7 +77,7 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
             <button
               key={card.id}
               onClick={() => handleSelectCard(card)}
-              className="w-full px-5 py-4 text-left hover:bg-purple-50 dark:hover:bg-purple-500/10 border-b border-gray-100 dark:border-white/5 last:border-b-0 transition-all group"
+              className="w-full px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-white/5 border-b border-gray-100 dark:border-white/5 last:border-b-0 transition-all group"
             >
               <div className="flex items-center space-x-4">
                 {card.image_url && (
@@ -88,10 +88,10 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
                   />
                 )}
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">{card.name}</div>
+                  <div className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{card.name}</div>
                   <div className="text-sm text-gray-500 dark:text-white/60 mt-0.5">{card.set_name}</div>
                   {card.current_price > 0 && (
-                    <div className="text-sm font-bold text-purple-600 dark:text-purple-400 mt-1.5">
+                    <div className="text-sm font-bold text-gray-900 dark:text-white mt-1.5">
                       ${card.current_price.toFixed(2)}
                     </div>
                   )}

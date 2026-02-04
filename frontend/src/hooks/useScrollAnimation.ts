@@ -20,12 +20,20 @@ export function useScrollAnimation(options: UseScrollAnimationOptions = {}) {
     const element = ref.current
     if (!element) return
 
-    // Check if element is already in viewport on mount
-    const rect = element.getBoundingClientRect()
-    const windowHeight = window.innerHeight
-    if (rect.top < windowHeight && rect.bottom > 0) {
-      setIsVisible(true)
-      if (triggerOnce) return
+    // Immediately check if in viewport
+    const checkVisibility = () => {
+      const rect = element.getBoundingClientRect()
+      const windowHeight = window.innerHeight
+      if (rect.top < windowHeight + 100 && rect.bottom > -100) {
+        setIsVisible(true)
+        return true
+      }
+      return false
+    }
+
+    // Check immediately
+    if (checkVisibility() && triggerOnce) {
+      return
     }
 
     const observer = new IntersectionObserver(
@@ -44,10 +52,14 @@ export function useScrollAnimation(options: UseScrollAnimationOptions = {}) {
 
     observer.observe(element)
 
+    // Fallback: always show after 800ms to prevent blank sections
+    const fallback = setTimeout(() => {
+      setIsVisible(true)
+    }, 800)
+
     return () => {
-      if (element) {
-        observer.unobserve(element)
-      }
+      observer.unobserve(element)
+      clearTimeout(fallback)
     }
   }, [threshold, rootMargin, triggerOnce])
 

@@ -6,8 +6,6 @@
   --foreground-rgb: 17, 24, 39;
   --background-start-rgb: 249, 250, 251;
   --background-end-rgb: 255, 255, 255;
-  --font-inter: 'Inter', sans-serif;
-  --font-space-grotesk: 'Space Grotesk', sans-serif;
 }
 
 .dark {
@@ -29,20 +27,21 @@ body {
     )
     rgb(var(--background-start-rgb));
   min-height: 100vh;
-  font-family: var(--font-inter);
+  font-family: var(--font-main), -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-space-grotesk);
+  font-family: var(--font-main), -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
 }
 
 @layer components {
   .card {
-    @apply bg-white/60 dark:bg-white/5 backdrop-blur-sm text-gray-900 dark:text-white rounded-md shadow-sm border border-gray-200 dark:border-white/10 p-6 transition-all duration-300 hover:shadow-md;
+    @apply bg-black/[0.03] dark:bg-white/[0.03] text-gray-900 dark:text-white rounded-xl border border-black/[0.025] dark:border-white/[0.025] p-6 transition-all duration-300;
   }
 
   .btn-primary {
-    @apply bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-semibold py-3 px-6 rounded-md hover:from-teal-600 hover:to-emerald-600 transition-all duration-200 shadow-sm hover:shadow-lg hover:scale-105;
+    @apply bg-gray-800 dark:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-200;
   }
 
   .btn-secondary {

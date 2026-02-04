@@ -93,7 +93,7 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
           </div>
 
           <div className="flex items-start space-x-3">
-            <Palette className="w-5 h-5 text-purple-500 mt-0.5" />
+            <Palette className="w-5 h-5 text-gray-500 mt-0.5" />
             <div>
               <div className="text-xs text-gray-500 dark:text-white/60 mb-1">Artist</div>
               <div className="font-semibold text-gray-900 dark:text-white">{details.artist || 'Unknown'}</div>
@@ -125,7 +125,7 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
                 href={details.tcgplayer_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-lg transition-colors group dark:bg-[#050505] dark:hover:bg-[#0b0b0b] dark:border-white/15 dark:text-white"
+                className="flex items-center justify-between w-full px-4 py-3 bg-blue-50/50 hover:bg-blue-100/50 border border-blue-100/50 rounded-lg transition-colors group dark:bg-white/[0.02] dark:hover:bg-white/[0.04] dark:border-white/[0.04] dark:text-white"
               >
                 <span className="text-sm font-medium text-blue-900 dark:text-white">View on TCGPlayer</span>
                 <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-300 group-hover:translate-x-1 transition-transform" />
@@ -136,7 +136,7 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
                 href={details.ebay_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between w-full px-4 py-3 bg-yellow-50 hover:bg-yellow-100 border border-yellow-100 rounded-lg transition-colors group dark:bg-[#050505] dark:hover:bg-[#0b0b0b] dark:border-white/15 dark:text-white"
+                className="flex items-center justify-between w-full px-4 py-3 bg-yellow-50/50 hover:bg-yellow-100/50 border border-yellow-100/50 rounded-lg transition-colors group dark:bg-white/[0.02] dark:hover:bg-white/[0.04] dark:border-white/[0.04] dark:text-white"
               >
                 <span className="text-sm font-medium text-yellow-900 dark:text-white">View on eBay</span>
                 <ExternalLink className="w-4 h-4 text-yellow-500 dark:text-yellow-200 group-hover:translate-x-1 transition-transform" />

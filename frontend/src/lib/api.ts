@@ -41,7 +41,7 @@ export interface CardDetails {
   }
 }
 
-export type CardCondition = 'Near Mint' | 'PSA 6' | 'PSA 7' | 'PSA 8' | 'PSA 9' | 'PSA 10'
+export type CardCondition = 'Ungraded' | 'Near Mint' | 'PSA 6' | 'PSA 7' | 'PSA 8' | 'PSA 9' | 'PSA 10'
 
 export interface PriceHistory {
   date: string

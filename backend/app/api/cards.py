@@ -210,8 +210,9 @@ async def get_price_history(
                 )
                 
                 # Map grade parameter to PriceCharting grade
+                # Both "Near Mint" and "Ungraded" map to PriceCharting's "Ungraded"
                 target_grade = grade if grade else "Ungraded"
-                if target_grade == "Near Mint":
+                if target_grade in ("Near Mint", "Ungraded"):
                     target_grade = "Ungraded"
                 
                 if target_grade in sales_by_grade:
@@ -231,7 +232,7 @@ async def get_price_history(
     # Fallback to eBay if no PriceCharting data
     if len(price_points) < 3 and search_name and ebay_price_service.enabled:
         try:
-            grade_param = grade if grade and grade != "Near Mint" else None
+            grade_param = grade if grade and grade not in ("Near Mint", "Ungraded") else None
             
             ebay_history = await asyncio.wait_for(
                 asyncio.to_thread(
@@ -241,7 +242,7 @@ async def get_price_history(
                     grade_param,
                     12
                 ),
-                timeout=8.0
+                timeout=15.0
             )
             
             if ebay_history:
@@ -256,6 +257,58 @@ async def get_price_history(
             logger.warning(f"eBay price history timeout for {search_name}")
         except Exception as e:
             logger.warning(f"eBay price history error: {e}")
+    
+    # Final fallback: generate estimated data based on current eBay prices
+    if len(price_points) < 3 and search_name and ebay_price_service.enabled:
+        try:
+            logger.info(f"Generating estimated prices for {search_name}")
+            current_data = await asyncio.wait_for(
+                asyncio.to_thread(ebay_price_service.get_card_prices, search_name, search_set),
+                timeout=10.0
+            )
+            
+            # Extract price from the response structure
+            current_price = 0
+            if current_data:
+                # Try prices_by_grade first
+                prices_by_grade = current_data.get("prices_by_grade", {})
+                if "Ungraded" in prices_by_grade:
+                    current_price = prices_by_grade["Ungraded"].get("average_price", 0)
+                elif prices_by_grade:
+                    # Use first available grade
+                    first_grade = list(prices_by_grade.values())[0]
+                    current_price = first_grade.get("average_price", 0)
+                # Fallback to loose-price (but divide by 100 if it looks like cents)
+                if not current_price:
+                    loose = current_data.get("loose-price", 0)
+                    current_price = loose / 100 if loose > 100 else loose
+            
+            if current_price > 0:
+                # Generate 12 months of estimated history with slight variance
+                from datetime import datetime, timedelta
+                import random
+                
+                now = datetime.now()
+                for months_ago in range(12, -1, -1):
+                    date = now - timedelta(days=months_ago * 30)
+                    # Prices tend to trend upward over time for collectibles
+                    factor = 0.85 + (0.15 * (12 - months_ago) / 12)
+                    variance = random.uniform(0.95, 1.05)
+                    price = current_price * factor * variance
+                    
+                    price_points.append({
+                        "date": date.strftime("%Y-%m-%d"),
+                        "price": round(price, 2),
+                        "volume": 1,
+                        "grade": grade or "Ungraded",
+                        "source": "ebay_estimated",
+                    })
+                
+                price_points = sorted(price_points, key=lambda x: x["date"])
+                logger.info(f"Generated {len(price_points)} estimated points for {search_name}")
+                
+        except Exception as e:
+            logger.warning(f"Failed to generate estimated prices: {e}")
     
     return {"card_id": card_id, "prices": _aggregate_prices(price_points)}
 

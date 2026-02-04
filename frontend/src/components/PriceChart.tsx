@@ -13,7 +13,7 @@ interface PriceChartProps {
 
 // Colors for different grades
 const GRADE_COLORS: Record<string, string> = {
-  'Near Mint': '#6366f1',
+  'Ungraded': '#6366f1',
   'PSA 1': '#ef4444',
   'PSA 2': '#f97316',
   'PSA 3': '#f59e0b',
@@ -49,7 +49,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
   const [priceData, setPriceData] = useState<PriceHistory[]>([])
   const [allGradesData, setAllGradesData] = useState<AllGradesHistory | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [condition, setCondition] = useState<CardCondition>('Near Mint')
+  const [condition, setCondition] = useState<CardCondition>('Ungraded')
   const [viewMode, setViewMode] = useState<'single' | 'all'>('single')  // Default to ungraded view
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
       } else {
         // Fetch single grade
         const data = await getPriceHistory(cardId, condition, cardName, setName)
-        setPriceData(data)
+      setPriceData(data)
         setAllGradesData(null)
       }
       
@@ -88,7 +88,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
       <div className="card">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <BarChart3 className="w-6 h-6 text-purple-500" />
+            <BarChart3 className="w-6 h-6 text-gray-600 dark:text-gray-400" />
             <div>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                 All PSA Grades Analysis
@@ -101,12 +101,12 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setViewMode('single')}
-              className="text-sm px-3 py-1.5 rounded-md border border-gray-300 bg-white dark:bg-[#111] dark:border-white/20 dark:text-white hover:bg-gray-50 dark:hover:bg-white/10"
+              className="text-sm px-3 py-1.5 rounded-lg border border-gray-200/50 bg-white/50 dark:bg-white/5 dark:border-white/10 dark:text-white hover:bg-gray-50 dark:hover:bg-white/10"
             >
               Single Grade
             </button>
             <button
-              className="text-sm px-3 py-1.5 rounded-md bg-purple-600 text-white"
+              className="text-sm px-3 py-1.5 rounded-lg bg-gray-700 dark:bg-gray-600 text-white"
             >
               All Grades
             </button>
@@ -115,15 +115,15 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
 
         {/* Recommendations Banner */}
         {allGradesData.recommendations && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-500/20">
+          <div className="mb-6 p-4 bg-gray-50/50 dark:bg-white/[0.02] rounded-lg border border-gray-200/50 dark:border-white/[0.05]">
             <div className="flex items-center space-x-2 mb-3">
-              <Award className="w-5 h-5 text-purple-500" />
+              <Award className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               <span className="font-semibold text-gray-900 dark:text-white">Investment Recommendations</span>
             </div>
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="text-gray-500 dark:text-white/60">Best Value:</span>
-                <span className="ml-2 font-semibold text-purple-600 dark:text-purple-400">
+                <span className="ml-2 font-semibold text-blue-600 dark:text-blue-400">
                   {allGradesData.recommendations.best_value || 'N/A'}
                 </span>
               </div>
@@ -273,9 +273,9 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
               onChange={(e) =>
                 setCondition(e.target.value as CardCondition)
               }
-              className="text-sm px-3 py-1.5 rounded-md border border-gray-300 bg-white dark:bg-[#111] dark:border-white/20 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm px-3 py-1.5 rounded-lg border border-gray-200/50 bg-white/50 dark:bg-white/5 dark:border-white/10 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50"
             >
-              <option value="Near Mint">Near Mint</option>
+              <option value="Ungraded">Ungraded</option>
               <option value="PSA 6">PSA 6</option>
               <option value="PSA 7">PSA 7</option>
               <option value="PSA 8">PSA 8</option>
@@ -289,7 +289,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             No price data available for this condition yet.
           </p>
           <p className="text-sm text-gray-500 dark:text-white/60">
-            Try a different condition, or select Near Mint.
+            Try a different condition, or select Ungraded.
           </p>
         </div>
       </div>
@@ -329,10 +329,10 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
               Price History
             </h3>
             <p className="text-xs text-gray-500 dark:text-white/60">
-              {condition === 'All'
-                ? 'Loose / market price trend'
+              {condition === 'Ungraded'
+                ? 'Ungraded / raw card prices'
                 : `Condition: ${condition}`}
-              {hasHistoricalData && ' • eBay sold data'}
+              {hasHistoricalData && ' • PriceCharting data'}
               {hasEstimatedData && !hasHistoricalData && ' • Estimated trend'}
             </p>
           </div>
@@ -358,9 +358,9 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
               onChange={(e) =>
                 setCondition(e.target.value as CardCondition)
               }
-              className="text-sm px-3 py-1.5 rounded-md border border-gray-300 bg-white dark:bg-[#111] dark:border-white/20 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm px-3 py-1.5 rounded-lg border border-gray-200/50 bg-white/50 dark:bg-white/5 dark:border-white/10 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50"
             >
-              <option value="Near Mint">Near Mint</option>
+              <option value="Ungraded">Ungraded</option>
               <option value="PSA 6">PSA 6</option>
               <option value="PSA 7">PSA 7</option>
               <option value="PSA 8">PSA 8</option>
@@ -370,7 +370,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             {cardName && (
               <button
                 onClick={() => setViewMode('all')}
-                className="text-sm px-3 py-1.5 rounded-md bg-purple-600 text-white hover:bg-purple-700"
+                className="text-sm px-3 py-1.5 rounded-lg bg-gray-700 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-500"
               >
                 All Grades
               </button>

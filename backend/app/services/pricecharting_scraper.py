@@ -34,10 +34,11 @@ class PriceChartingScraper:
     
     def _normalize_for_url(self, name: str) -> str:
         """Convert card/set name to URL-friendly format."""
-        import unicodedata
         # Lowercase
         name = name.lower()
-        # Replace special chars with dashes
+        # Remove apostrophes completely (Blaine's -> Blaines)
+        name = name.replace("'", "")
+        # Replace other special chars with dashes
         name = re.sub(r'[^a-z0-9]+', '-', name)
         # Remove leading/trailing dashes
         name = name.strip('-')
@@ -161,8 +162,8 @@ class PriceChartingScraper:
     
     def _filter_outliers(self, sales: List[Dict], grade: str) -> List[Dict]:
         """
-        Filter outliers using IQR method + grade-specific bounds.
-        This removes misclassified listings (e.g., PSA 10 at $258).
+        Filter outliers using IQR method only.
+        Works for any card regardless of value.
         """
         if len(sales) < 4:
             return sales
@@ -176,52 +177,16 @@ class PriceChartingScraper:
         q3 = prices[q3_idx]
         iqr = q3 - q1
         
-        # IQR bounds (1.5x is standard, use 2x for more tolerance)
-        lower_bound = q1 - 2 * iqr
-        upper_bound = q3 + 2 * iqr
-        
-        # Grade-specific minimum bounds (based on market knowledge)
-        # PSA 10 Charizard Base Set should never be under $5000
-        # PSA 9 should never be under $1000, etc.
-        grade_minimums = {
-            "PSA 10": 5000,
-            "PSA 9": 1000,
-            "PSA 8": 500,
-            "PSA 7": 400,
-            "PSA 6": 250,
-            "PSA 5": 200,
-            "PSA 4": 150,
-            "PSA 3": 100,
-            "PSA 2": 80,
-            "PSA 1": 80,
-            "Ungraded": 50,
-        }
-        
-        # Grade-specific maximum bounds (to filter out 1st edition/shadowless)
-        # For ungraded, use a reasonable max that filters shadowless ($2k+) but keeps NM-LP unlimited
-        grade_maximums = {
-            "Ungraded": 1500,  # Unlimited ungraded - filter shadowless/1st ed
-            "PSA 1": 600,
-            "PSA 2": 700,
-            "PSA 3": 800,
-            "PSA 4": 900,
-            "PSA 5": 1000,
-            "PSA 6": 1500,
-            "PSA 7": 2000,
-            "PSA 8": 4000,
-            "PSA 9": 6000,
-            "PSA 10": 50000,  # High ceiling for PSA 10
-        }
-        
-        min_price = max(lower_bound, grade_minimums.get(grade, 0))
-        max_price = min(upper_bound, grade_maximums.get(grade, float('inf')))
+        # IQR bounds (use 2.5x for tolerance - keeps most real data)
+        lower_bound = max(10, q1 - 2.5 * iqr)  # Never go below $10
+        upper_bound = q3 + 2.5 * iqr
         
         # Filter
-        filtered = [s for s in sales if min_price <= s["price"] <= max_price]
+        filtered = [s for s in sales if lower_bound <= s["price"] <= upper_bound]
         
         if len(filtered) < len(sales):
             removed = len(sales) - len(filtered)
-            logger.info(f"{grade}: Removed {removed} outliers, kept {len(filtered)} (${min_price:.0f}-${max_price:.0f})")
+            logger.info(f"{grade}: Removed {removed} outliers, kept {len(filtered)} (${lower_bound:.0f}-${upper_bound:.0f})")
         
         return filtered
     
