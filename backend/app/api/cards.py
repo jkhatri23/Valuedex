@@ -245,8 +245,9 @@ async def get_price_history(
     if search_name:
         try:
             # Search for card on PriceCharting
+            card_num = card.card_number if card else None
             search_results = await asyncio.to_thread(
-                pricecharting_scraper.search_card, search_name, search_set
+                pricecharting_scraper.search_card, search_name, search_set, card_num
             )
             
             if search_results:
@@ -433,8 +434,9 @@ async def get_all_grades_price_history(
         logger.info(f"Getting PriceCharting data for {name} ({s_name})")
         
         # Search for the card
+        card_num = card.card_number if card else None
         search_results = await asyncio.to_thread(
-            pricecharting_scraper.search_card, name, s_name
+            pricecharting_scraper.search_card, name, s_name, card_num
         )
         
         if search_results:

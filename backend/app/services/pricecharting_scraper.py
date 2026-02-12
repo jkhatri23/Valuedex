@@ -153,28 +153,230 @@ class PriceChartingScraper:
             except Exception as e:
                 continue
         
+        # If direct URL attempts failed, try search-based fallback
+        if not results:
+            logger.info(f"Direct URL failed for {card_name}, trying search fallback...")
+            search_results = self._search_via_website(card_name, set_name)
+            if search_results:
+                results = search_results
+        
         self._cache[cache_key] = {"data": results, "time": time.time()}
         return results
     
+    def _search_via_website(self, card_name: str, set_name: str = None) -> List[Dict]:
+        """Search for a card using PriceCharting's search page as a fallback."""
+        try:
+            # Build search query
+            search_query = f"pokemon {card_name}"
+            if set_name:
+                search_query += f" {set_name}"
+            
+            search_url = f"{self.BASE_URL}/search-products?q={search_query.replace(' ', '+')}&type=prices"
+            logger.debug(f"Searching via URL: {search_url}")
+            
+            response = self.session.get(search_url, timeout=15)
+            if response.status_code != 200:
+                return []
+            
+            soup = BeautifulSoup(response.text, 'lxml')
+            results = []
+            
+            # Find search results - they're typically in table rows or links
+            # PriceCharting uses various selectors for results
+            result_links = soup.select('table.products a, .offer a, a[href*="/game/pokemon-"]')
+            
+            card_name_lower = card_name.lower().replace("'", "").replace("'", "")
+            
+            for link in result_links[:20]:  # Check first 20 results
+                href = link.get('href', '')
+                text = link.get_text(strip=True).lower()
+                
+                # Skip Japanese cards
+                if 'japanese' in href.lower() or 'japanese' in text:
+                    continue
+                
+                # Check if this looks like the right card
+                text_simple = text.replace("'", "").replace("'", "")
+                if card_name_lower in text_simple and '/game/pokemon-' in href:
+                    # Build full URL if relative
+                    if href.startswith('/'):
+                        full_url = f"{self.BASE_URL}{href}"
+                    else:
+                        full_url = href
+                    
+                    # Verify this is the right card by checking set name if provided
+                    if set_name:
+                        set_lower = set_name.lower().replace(" ", "-")
+                        if set_lower not in href.lower() and set_lower.replace("-", "") not in href.lower():
+                            # Set doesn't match, but might still be right card
+                            # Only skip if we have a better match
+                            continue
+                    
+                    is_first_ed = '1st' in text or 'first' in text
+                    results.append({
+                        "name": link.get_text(strip=True),
+                        "url": full_url,
+                        "is_first_edition": is_first_ed,
+                    })
+                    logger.info(f"Found via search: {link.get_text(strip=True)} at {full_url}")
+                    
+                    # Return first good match
+                    if results:
+                        break
+            
+            return results
+            
+        except Exception as e:
+            logger.warning(f"Search fallback failed: {e}")
+            return []
+    
     def _get_set_slug(self, set_name: str) -> str:
         """Get the PriceCharting set slug for a set name."""
+        # Comprehensive mapping of set names to PriceCharting URL slugs
         SET_NAME_MAP = {
+            # Base era
             "base": "pokemon-base-set",
             "base set": "pokemon-base-set",
             "jungle": "pokemon-jungle",
             "fossil": "pokemon-fossil",
+            "base set 2": "pokemon-base-set-2",
+            # Team Rocket era
             "team rocket": "pokemon-team-rocket",
+            "team rocket returns": "pokemon-team-rocket-returns",
+            # Gym era
             "gym heroes": "pokemon-gym-heroes",
             "gym challenge": "pokemon-gym-challenge",
+            # Neo era
             "neo genesis": "pokemon-neo-genesis",
             "neo discovery": "pokemon-neo-discovery",
             "neo revelation": "pokemon-neo-revelation",
             "neo destiny": "pokemon-neo-destiny",
+            # Legendary/e-Card era
             "legendary collection": "pokemon-legendary-collection",
-            "base set 2": "pokemon-base-set-2",
             "expedition": "pokemon-expedition-base-set",
+            "expedition base set": "pokemon-expedition-base-set",
             "aquapolis": "pokemon-aquapolis",
             "skyridge": "pokemon-skyridge",
+            # Ruby & Sapphire era
+            "ruby & sapphire": "pokemon-ruby-sapphire",
+            "ruby and sapphire": "pokemon-ruby-sapphire",
+            "sandstorm": "pokemon-sandstorm",
+            "dragon": "pokemon-dragon",
+            "team magma vs team aqua": "pokemon-team-magma-vs-team-aqua",
+            "hidden legends": "pokemon-hidden-legends",
+            "firered & leafgreen": "pokemon-firered-leafgreen",
+            "team rocket returns": "pokemon-team-rocket-returns",
+            "deoxys": "pokemon-deoxys",
+            "emerald": "pokemon-emerald",
+            "unseen forces": "pokemon-unseen-forces",
+            "delta species": "pokemon-delta-species",
+            "legend maker": "pokemon-legend-maker",
+            "holon phantoms": "pokemon-holon-phantoms",
+            "crystal guardians": "pokemon-crystal-guardians",
+            "dragon frontiers": "pokemon-dragon-frontiers",
+            "power keepers": "pokemon-power-keepers",
+            # Diamond & Pearl era
+            "diamond & pearl": "pokemon-diamond-pearl",
+            "diamond and pearl": "pokemon-diamond-pearl",
+            "mysterious treasures": "pokemon-mysterious-treasures",
+            "secret wonders": "pokemon-secret-wonders",
+            "great encounters": "pokemon-great-encounters",
+            "majestic dawn": "pokemon-majestic-dawn",
+            "legends awakened": "pokemon-legends-awakened",
+            "stormfront": "pokemon-stormfront",
+            # Platinum era
+            "platinum": "pokemon-platinum",
+            "rising rivals": "pokemon-rising-rivals",
+            "supreme victors": "pokemon-supreme-victors",
+            "arceus": "pokemon-arceus",
+            # HeartGold SoulSilver era
+            "heartgold soulsilver": "pokemon-heartgold-soulsilver",
+            "heartgold & soulsilver": "pokemon-heartgold-soulsilver",
+            "unleashed": "pokemon-unleashed",
+            "undaunted": "pokemon-undaunted",
+            "triumphant": "pokemon-triumphant",
+            "call of legends": "pokemon-call-of-legends",
+            # Black & White era
+            "black & white": "pokemon-black-white",
+            "black and white": "pokemon-black-white",
+            "emerging powers": "pokemon-emerging-powers",
+            "noble victories": "pokemon-noble-victories",
+            "next destinies": "pokemon-next-destinies",
+            "dark explorers": "pokemon-dark-explorers",
+            "dragons exalted": "pokemon-dragons-exalted",
+            "dragon vault": "pokemon-dragon-vault",
+            "boundaries crossed": "pokemon-boundaries-crossed",
+            "plasma storm": "pokemon-plasma-storm",
+            "plasma freeze": "pokemon-plasma-freeze",
+            "plasma blast": "pokemon-plasma-blast",
+            "legendary treasures": "pokemon-legendary-treasures",
+            # XY era
+            "xy": "pokemon-xy",
+            "flashfire": "pokemon-flashfire",
+            "furious fists": "pokemon-furious-fists",
+            "phantom forces": "pokemon-phantom-forces",
+            "primal clash": "pokemon-primal-clash",
+            "roaring skies": "pokemon-roaring-skies",
+            "ancient origins": "pokemon-ancient-origins",
+            "breakthrough": "pokemon-breakthrough",
+            "breakpoint": "pokemon-breakpoint",
+            "fates collide": "pokemon-fates-collide",
+            "steam siege": "pokemon-steam-siege",
+            "evolutions": "pokemon-evolutions",
+            # Sun & Moon era
+            "sun & moon": "pokemon-sun-moon",
+            "sun and moon": "pokemon-sun-moon",
+            "guardians rising": "pokemon-guardians-rising",
+            "burning shadows": "pokemon-burning-shadows",
+            "shining legends": "pokemon-shining-legends",
+            "crimson invasion": "pokemon-crimson-invasion",
+            "ultra prism": "pokemon-ultra-prism",
+            "forbidden light": "pokemon-forbidden-light",
+            "celestial storm": "pokemon-celestial-storm",
+            "dragon majesty": "pokemon-dragon-majesty",
+            "lost thunder": "pokemon-lost-thunder",
+            "team up": "pokemon-team-up",
+            "unbroken bonds": "pokemon-unbroken-bonds",
+            "unified minds": "pokemon-unified-minds",
+            "hidden fates": "pokemon-hidden-fates",
+            "cosmic eclipse": "pokemon-cosmic-eclipse",
+            # Sword & Shield era
+            "sword & shield": "pokemon-sword-shield",
+            "sword and shield": "pokemon-sword-shield",
+            "rebel clash": "pokemon-rebel-clash",
+            "darkness ablaze": "pokemon-darkness-ablaze",
+            "champions path": "pokemon-champions-path",
+            "vivid voltage": "pokemon-vivid-voltage",
+            "shining fates": "pokemon-shining-fates",
+            "battle styles": "pokemon-battle-styles",
+            "chilling reign": "pokemon-chilling-reign",
+            "evolving skies": "pokemon-evolving-skies",
+            "celebrations": "pokemon-celebrations",
+            "fusion strike": "pokemon-fusion-strike",
+            "brilliant stars": "pokemon-brilliant-stars",
+            "astral radiance": "pokemon-astral-radiance",
+            "pokemon go": "pokemon-pokemon-go",
+            "lost origin": "pokemon-lost-origin",
+            "silver tempest": "pokemon-silver-tempest",
+            "crown zenith": "pokemon-crown-zenith",
+            # Scarlet & Violet era
+            "scarlet & violet": "pokemon-scarlet-violet",
+            "scarlet and violet": "pokemon-scarlet-violet",
+            "paldea evolved": "pokemon-paldea-evolved",
+            "obsidian flames": "pokemon-obsidian-flames",
+            "151": "pokemon-151",
+            "paradox rift": "pokemon-paradox-rift",
+            "paldean fates": "pokemon-paldean-fates",
+            "temporal forces": "pokemon-temporal-forces",
+            "twilight masquerade": "pokemon-twilight-masquerade",
+            "shrouded fable": "pokemon-shrouded-fable",
+            "stellar crown": "pokemon-stellar-crown",
+            "surging sparks": "pokemon-surging-sparks",
+            # Promos
+            "black star promos": "pokemon-black-star-promos",
+            "wizards black star promos": "pokemon-wizards-black-star-promos",
+            "swsh black star promos": "pokemon-swsh-black-star-promos",
+            "sv black star promos": "pokemon-sv-black-star-promos",
         }
         set_lower = set_name.lower().strip()
         if set_lower in SET_NAME_MAP:
@@ -215,11 +417,70 @@ class PriceChartingScraper:
                     else:
                         prices[grade] = round(median_price, 2)
             
-            logger.info(f"Extracted prices from sales data: {prices}")
+            # If no prices from sales history, try to scrape displayed price
+            if not prices:
+                logger.info(f"No sales history found, trying to scrape displayed price from {url}")
+                prices = self._scrape_displayed_price(url)
+            
+            logger.info(f"Extracted prices: {prices}")
             return prices
             
         except Exception as e:
             logger.error(f"Failed to get prices: {e}")
+            return {}
+    
+    def _scrape_displayed_price(self, url: str) -> Dict:
+        """Scrape the displayed price from the page when sales history is unavailable."""
+        try:
+            response = self.session.get(url, timeout=15)
+            if response.status_code != 200:
+                return {}
+            
+            html = response.text
+            prices = {}
+            
+            # Try multiple patterns used by PriceCharting
+            # Pattern 1: Look for price in the main price display
+            price_patterns = [
+                r'class="price"[^>]*>\s*\$([0-9,.]+)',
+                r'Ungraded[^$]*\$([0-9,.]+)',
+                r'Loose[^$]*\$([0-9,.]+)',
+                r'id="used_price"[^>]*>\s*\$([0-9,.]+)',
+                r'data-price="([0-9,.]+)"',
+            ]
+            
+            for pattern in price_patterns:
+                match = re.search(pattern, html, re.IGNORECASE)
+                if match:
+                    try:
+                        price = float(match.group(1).replace(',', ''))
+                        if price > 0 and price != 6.00:  # Skip subscription price
+                            prices["ungraded"] = round(price, 2)
+                            break
+                    except ValueError:
+                        continue
+            
+            # Try to get graded prices
+            for grade in range(1, 11):
+                patterns = [
+                    rf'PSA\s*{grade}[^$]*\$([0-9,.]+)',
+                    rf'Grade\s*{grade}[^$]*\$([0-9,.]+)',
+                ]
+                for pattern in patterns:
+                    match = re.search(pattern, html, re.IGNORECASE)
+                    if match:
+                        try:
+                            price = float(match.group(1).replace(',', ''))
+                            if price > 0:
+                                prices[f"PSA {grade}"] = round(price, 2)
+                                break
+                        except ValueError:
+                            continue
+            
+            return prices
+            
+        except Exception as e:
+            logger.warning(f"Failed to scrape displayed price: {e}")
             return {}
     
     def _filter_outliers(self, sales: List[Dict], grade: str) -> List[Dict]:
