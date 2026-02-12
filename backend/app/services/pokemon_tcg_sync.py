@@ -11,12 +11,13 @@ from sqlalchemy.exc import IntegrityError
 
 from app.database import SessionLocal
 from app.price_database import PriceSessionLocal
-from app.models.card import Card, PriceHistory
+from app.models.card import Card, PriceHistory, CardFeature
 from app.models.price_point import PricePoint
 from app.config import get_settings
 from app.services.ebay import ebay_price_service
 from app.services.grades import normalize_grade, grade_rank
 from app.services.pricepoints_migrations import ensure_pricepoints_grade_columns
+from app.services.features import feature_service
 
 settings = get_settings()
 
@@ -245,6 +246,21 @@ class PokemonTCGSync:
                         volume=0,
                     )
                 
+                # Update or create CardFeature record
+                if current_price > 0:
+                    existing_feature = db.query(CardFeature).filter(
+                        CardFeature.card_id == existing_card.id
+                    ).first()
+                    
+                    if existing_feature:
+                        # Update existing feature with new price
+                        existing_feature.current_price = current_price
+                    else:
+                        # Create new CardFeature
+                        features_dict = feature_service.create_card_features(existing_card, current_price, [])
+                        card_feature = CardFeature(card_id=existing_card.id, **features_dict)
+                        db.add(card_feature)
+                
                 return existing_card
             else:
                 # Create new card
@@ -282,6 +298,11 @@ class PokemonTCGSync:
                             current_price,
                             volume=0,
                         )
+                
+                # Create CardFeature record with calculated features
+                features_dict = feature_service.create_card_features(new_card, current_price, [])
+                card_feature = CardFeature(card_id=new_card.id, **features_dict)
+                db.add(card_feature)
                 
                 return new_card
                 

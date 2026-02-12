@@ -36,10 +36,11 @@ class PriceChartingScraper:
         """Convert card/set name to URL-friendly format."""
         # Lowercase
         name = name.lower()
-        # Remove apostrophes completely (Blaine's -> Blaines)
-        name = name.replace("'", "")
+        # URL-encode apostrophes (Blaine's -> blaine%27s) - PriceCharting keeps them
+        name = name.replace("'", "%27")
+        name = name.replace("'", "%27")  # Handle curly apostrophes too
         # Replace other special chars with dashes
-        name = re.sub(r'[^a-z0-9]+', '-', name)
+        name = re.sub(r'[^a-z0-9%]+', '-', name)
         # Remove leading/trailing dashes
         name = name.strip('-')
         return name
@@ -82,49 +83,72 @@ class PriceChartingScraper:
         
         return f"{self.BASE_URL}/game/{set_slug}/{card_slug}"
     
-    def search_card(self, card_name: str, set_name: str = None) -> List[Dict]:
+    def search_card(self, card_name: str, set_name: str = None, card_number: str = None) -> List[Dict]:
         """Find Pokemon card URLs on PriceCharting using direct URL construction."""
         if not set_name:
             set_name = "Base Set"
         
-        cache_key = f"search_{card_name}_{set_name}"
+        cache_key = f"search_{card_name}_{set_name}_{card_number}"
         if cache_key in self._cache:
             return self._cache[cache_key].get("data", [])
         
         results = []
         
+        # Get the English set slug only
+        set_slug = self._get_set_slug(set_name)
+        card_slug = self._normalize_for_url(card_name)
+        
         # Try common URL patterns for Pokemon cards
-        # Most cards have format: /game/pokemon-set-name/card-name-number
         possible_urls = []
         
-        # Try with common card numbers (for holo rare cards like Charizard)
-        for num in [4, 1, 2, 3, 5, 6, 7, 8, 9, 10]:
-            url = self._build_card_url(card_name, set_name, str(num))
-            possible_urls.append(url)
+        # If we have the actual card number, try it first
+        if card_number:
+            num = card_number.split('/')[0].strip()
+            possible_urls.append(f"{self.BASE_URL}/game/{set_slug}/{card_slug}-{num}")
+        
+        # Then try common card numbers as fallback
+        for num in [6, 4, 1, 2, 3, 5, 7, 8, 9, 10, 15, 20]:
+            url = f"{self.BASE_URL}/game/{set_slug}/{card_slug}-{num}"
+            if url not in possible_urls:
+                possible_urls.append(url)
         
         # Also try without number
-        url_no_num = self._build_card_url(card_name, set_name)
-        possible_urls.append(url_no_num)
+        url_no_num = f"{self.BASE_URL}/game/{set_slug}/{card_slug}"
+        if url_no_num not in possible_urls:
+            possible_urls.append(url_no_num)
         
         # Test each URL
         for url in possible_urls:
             try:
-                response = self.session.get(url, timeout=10)
+                response = self.session.get(url, timeout=10, allow_redirects=True)
+                # Check if we got redirected to a search page (meaning URL doesn't exist)
+                if 'search-products' in response.url:
+                    continue
+                # Skip Japanese cards - only use English card prices
+                if 'japanese' in response.url.lower():
+                    logger.debug(f"Skipping Japanese card URL: {response.url}")
+                    continue
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, 'lxml')
                     title = soup.select_one('h1')
                     
                     if title:
                         title_text = title.get_text(strip=True)
-                        # Check if it's the right card
-                        if card_name.lower() in title_text.lower():
+                        # Skip if title indicates Japanese card
+                        if 'japanese' in title_text.lower():
+                            logger.debug(f"Skipping Japanese card: {title_text}")
+                            continue
+                        # Check if it's the right card (be more lenient with name matching)
+                        card_name_simple = card_name.lower().replace("'", "").replace("'", "")
+                        title_simple = title_text.lower().replace("'", "").replace("'", "")
+                        if card_name_simple in title_simple:
                             is_first_ed = '1st' in title_text.lower() or 'first' in title_text.lower()
                             results.append({
                                 "name": title_text,
-                                "url": url,
+                                "url": response.url,  # Use final URL after redirects
                                 "is_first_edition": is_first_ed,
                             })
-                            logger.info(f"Found card: {title_text} at {url}")
+                            logger.info(f"Found card: {title_text} at {response.url}")
                             break  # Found one, stop looking
             except Exception as e:
                 continue
@@ -132,28 +156,66 @@ class PriceChartingScraper:
         self._cache[cache_key] = {"data": results, "time": time.time()}
         return results
     
+    def _get_set_slug(self, set_name: str) -> str:
+        """Get the PriceCharting set slug for a set name."""
+        SET_NAME_MAP = {
+            "base": "pokemon-base-set",
+            "base set": "pokemon-base-set",
+            "jungle": "pokemon-jungle",
+            "fossil": "pokemon-fossil",
+            "team rocket": "pokemon-team-rocket",
+            "gym heroes": "pokemon-gym-heroes",
+            "gym challenge": "pokemon-gym-challenge",
+            "neo genesis": "pokemon-neo-genesis",
+            "neo discovery": "pokemon-neo-discovery",
+            "neo revelation": "pokemon-neo-revelation",
+            "neo destiny": "pokemon-neo-destiny",
+            "legendary collection": "pokemon-legendary-collection",
+            "base set 2": "pokemon-base-set-2",
+            "expedition": "pokemon-expedition-base-set",
+            "aquapolis": "pokemon-aquapolis",
+            "skyridge": "pokemon-skyridge",
+        }
+        set_lower = set_name.lower().strip()
+        if set_lower in SET_NAME_MAP:
+            return SET_NAME_MAP[set_lower]
+        slug = self._normalize_for_url(set_name)
+        if not slug.startswith('pokemon-'):
+            slug = f"pokemon-{slug}"
+        return slug
+    
     def get_card_prices(self, url: str) -> Dict:
-        """Get current prices for a card from its PriceCharting page."""
+        """Get current prices for a card from its PriceCharting page using actual sales data."""
         try:
-            response = self.session.get(url, timeout=15)
-            soup = BeautifulSoup(response.text, 'lxml')
-            html = response.text
+            # Use actual sales history for more accurate pricing
+            sales_by_grade = self.get_sales_history(url)
             
             prices = {}
             
-            # Extract current prices
-            # Look for price table or price elements
-            ungraded_match = re.search(r'Ungraded[^$]*\$([0-9,.]+)', html)
-            if ungraded_match:
-                prices["ungraded"] = float(ungraded_match.group(1).replace(',', ''))
+            for grade, sales in sales_by_grade.items():
+                if not sales:
+                    continue
+                
+                # Sort by date descending to get recent sales
+                sorted_sales = sorted(sales, key=lambda x: x.get("date", ""), reverse=True)
+                
+                # Use median of recent sales (up to last 10) for stability
+                recent_prices = [s["price"] for s in sorted_sales[:10]]
+                if recent_prices:
+                    recent_prices.sort()
+                    mid = len(recent_prices) // 2
+                    if len(recent_prices) % 2 == 0:
+                        median_price = (recent_prices[mid-1] + recent_prices[mid]) / 2
+                    else:
+                        median_price = recent_prices[mid]
+                    
+                    # Map grade name to key
+                    if grade == "Ungraded":
+                        prices["ungraded"] = round(median_price, 2)
+                    else:
+                        prices[grade] = round(median_price, 2)
             
-            # Look for graded prices
-            for grade in range(1, 11):
-                pattern = rf'(?:PSA|Grade)\s*{grade}[^$]*\$([0-9,.]+)'
-                match = re.search(pattern, html, re.IGNORECASE)
-                if match:
-                    prices[f"PSA {grade}"] = float(match.group(1).replace(',', ''))
-            
+            logger.info(f"Extracted prices from sales data: {prices}")
             return prices
             
         except Exception as e:
@@ -228,8 +290,8 @@ class PriceChartingScraper:
                 
                 price = float(price_match.group(1).replace(',', ''))
                 
-                # Skip subscription price and invalid prices
-                if price < 10 or price == 6.00:
+                # Skip subscription price (exactly $6.00) and negative prices
+                if price == 6.00 or price <= 0:
                     continue
                 
                 # Determine PSA grade
