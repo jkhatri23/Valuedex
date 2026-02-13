@@ -114,14 +114,14 @@ export default function Home() {
 
       {/* Hero Section */}
       {!selectedCard && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative" style={{ zIndex: 1 }}>
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-24 pb-16 md:pt-32 md:pb-20 relative" style={{ zIndex: 1 }}>
           {/* Decorative Background Elements */}
           <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
           
           {/* Main Hero */}
-          <div className="text-center mb-16 animate-fade-in relative z-10">
-            <h2 className="text-6xl md:text-7xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
+          <div className="text-center mb-20 md:mb-24 animate-fade-in relative z-10">
+            <h2 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-semibold text-gray-900 dark:text-white mb-8 md:mb-10 leading-[1.1] tracking-tight">
               <span className="inline-block animate-slide-up" style={{ animationDelay: '100ms', opacity: 0, animationFillMode: 'forwards' }}>
                 Predict Your Card's
               </span>
@@ -130,29 +130,24 @@ export default function Home() {
                 Future Value
               </span>
             </h2>
-            <p className="text-xl md:text-2xl text-gray-600 dark:text-white/70 mb-12 max-w-3xl mx-auto font-light animate-slide-up" style={{ animationDelay: '500ms', opacity: 0, animationFillMode: 'forwards' }}>
-              Advanced forecasting meets Pokémon TCG. 
-              Discover what your cards could be worth tomorrow.
-            </p>
+          
           </div>
 
           {/* Search Section */}
-          <div className="max-w-3xl mx-auto mb-20 animate-slide-up relative z-10" style={{ animationDelay: '200ms', opacity: 0, animationFillMode: 'forwards' }}>
+          <div className="max-w-2xl mx-auto mb-16 md:mb-20">
             <SearchBar onSelectCard={(card) => setSelectedCard(card)} />
           </div>
 
           {/* Featured Cards Gallery */}
           <div 
             ref={galleryAnimation.ref}
-            className={`max-w-6xl mx-auto mb-32 px-4 transition-all duration-1000 ${
+            className={`mb-20 md:mb-28 transition-all duration-700 ${
               galleryAnimation.isVisible ? 'scroll-visible' : 'scroll-hidden'
             }`}
           >
-            <div className="text-center mb-12">
-              <div className="flex items-center justify-center space-x-2 mb-3">
-                <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">Featured Cards</h3>
-              </div>
-              <p className="text-gray-600 dark:text-white/70 font-light text-lg">Explore popular cards and their current market values</p>
+            <div className="text-center mb-10">
+              <h3 className="text-2xl sm:text-3xl font-medium text-gray-900 dark:text-white tracking-tight mb-2">Popular cards</h3>
+              <p className="text-gray-500 dark:text-white/50 text-base">Click any card to see predictions</p>
             </div>
 
             {featuredCards.length > 0 ? (
@@ -200,148 +195,108 @@ export default function Home() {
             )}
           </div>
 
-          {/* Stats Section */}
-          <div 
-            ref={statsAnimation.ref}
-            className={`max-w-5xl mx-auto mb-20 transition-all duration-1000 ${
-              statsAnimation.isVisible ? 'scroll-visible' : 'scroll-hidden'
-            }`}
-          >
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="group text-center p-6 bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md hover:scale-105 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-300 cursor-default">
-                <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-500 transition-colors">
-                  1,000+
-                </div>
-                <div className="text-sm text-gray-600 dark:text-white/60 font-medium">
-                  Simulations per Prediction
-                </div>
-              </div>
-              <div className="group text-center p-6 bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md hover:scale-105 hover:border-gray-300 dark:hover:border-white/20 hover:shadow-lg transition-all duration-300 cursor-default" style={{ transitionDelay: '100ms' }}>
-                <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-500 transition-colors">
-                  3
-                </div>
-                <div className="text-sm text-gray-600 dark:text-white/60 font-medium">
-                  Scenario Forecasts
-                </div>
-              </div>
-              <div className="group text-center p-6 bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md hover:scale-105 hover:border-green-400 dark:hover:border-green-500 hover:shadow-lg transition-all duration-300 cursor-default" style={{ transitionDelay: '200ms' }}>
-                <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-green-500 transition-colors">
-                  5
-                </div>
-                <div className="text-sm text-gray-600 dark:text-white/60 font-medium">
-                  Years Ahead
-                </div>
-              </div>
-              <div className="group text-center p-6 bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md hover:scale-105 hover:border-orange-400 dark:hover:border-orange-500 hover:shadow-lg transition-all duration-300 cursor-default" style={{ transitionDelay: '300ms' }}>
-                <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-orange-500 transition-colors">
-                  Live
-                </div>
-                <div className="text-sm text-gray-600 dark:text-white/60 font-medium">
-                  Market Data
-                </div>
-              </div>
-            </div>
-          </div>
+         
 
           
           {/* How We Predict Section */}
           <div 
             ref={featuresAnimation.ref}
-            className={`transition-all duration-1000 ${
+            className={`mb-20 md:mb-28 transition-all duration-700 ${
               featuresAnimation.isVisible ? 'scroll-visible' : 'scroll-hidden'
             }`}
           >
-            <div className="text-center mb-12">
-              <h3 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">How We Predict</h3>
-              <p className="text-gray-600 dark:text-white/70 text-lg font-light max-w-2xl mx-auto">
+            <div className="text-center mb-10">
+              <h3 className="text-2xl sm:text-3xl font-medium text-gray-900 dark:text-white mb-2">How We Predict</h3>
+              <p className="text-gray-500 dark:text-white/50 text-base max-w-xl mx-auto">
                 Advanced forecasting with comprehensive risk analysis
               </p>
             </div>
 
             {/* Feature Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              <div 
-                className={`group bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md p-8 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-500 ${
-                  featuresAnimation.isVisible ? 'scroll-visible' : 'scroll-hidden-scale'
-                }`}
-                style={{ transitionDelay: '100ms' }}
-              >
-                <div className=" w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <LineChart className="w-8 h-8 text-blue-500 dark:text-blue-400" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10 mb-14">
+              <div className="bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md p-6 text-center">
+                <div className="w-12 h-12 rounded-md flex items-center justify-center mx-auto mb-3">
+                  <LineChart className="w-6 h-6 text-blue-500 dark:text-blue-400" />
                 </div>
-                <h4 className="text-gray-900 dark:text-white font-semibold text-lg mb-2">Exponential Smoothing</h4>
-                <p className="text-gray-600 dark:text-white/70 text-sm font-light">Holt's method for advanced trend detection</p>
+                <h4 className="text-gray-900 dark:text-white font-medium text-sm mb-1">Exponential Smoothing</h4>
+                <p className="text-gray-500 dark:text-white/50 text-xs">Holt's method for trend detection</p>
               </div>
 
-              <div 
-                className={`group bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md p-8 text-center hover:border-gray-300 dark:hover:border-white/20 transition-all duration-500 ${
-                  featuresAnimation.isVisible ? 'scroll-visible' : 'scroll-hidden-scale'
-                }`}
-                style={{ transitionDelay: '200ms' }}
-              >
-                <div className=" w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Brain className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+              <div className="bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md p-6 text-center">
+                <div className="w-12 h-12 rounded-md flex items-center justify-center mx-auto mb-3">
+                  <Brain className="w-6 h-6 text-gray-500 dark:text-gray-400" />
                 </div>
-                <h4 className="text-gray-900 dark:text-white font-semibold text-lg mb-2">Monte Carlo Simulation</h4>
-                <p className="text-gray-600 dark:text-white/70 text-sm font-light">1,000 simulations for risk assessment</p>
+                <h4 className="text-gray-900 dark:text-white font-medium text-sm mb-1">Monte Carlo Simulation</h4>
+                <p className="text-gray-500 dark:text-white/50 text-xs">1,000 simulations for risk assessment</p>
               </div>
 
-              <div 
-                className={`group bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md p-8 text-center hover:border-green-500 dark:hover:border-green-400 transition-all duration-500 ${
-                  featuresAnimation.isVisible ? 'scroll-visible' : 'scroll-hidden-scale'
-                }`}
-                style={{ transitionDelay: '300ms' }}
-              >
-                <div className=" w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Database className="w-8 h-8 text-green-500 dark:text-green-400" />
+              <div className="bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md p-6 text-center">
+                <div className="w-12 h-12 rounded-md flex items-center justify-center mx-auto mb-3">
+                  <Database className="w-6 h-6 text-green-500 dark:text-green-400" />
                 </div>
-                <h4 className="text-gray-900 dark:text-white font-semibold text-lg mb-2">VWAP Analysis</h4>
-                <p className="text-gray-600 dark:text-white/70 text-sm font-light">Volume-weighted market insights</p>
+                <h4 className="text-gray-900 dark:text-white font-medium text-sm mb-1">VWAP Analysis</h4>
+                <p className="text-gray-500 dark:text-white/50 text-xs">Volume-weighted market insights</p>
               </div>
 
-              <div 
-                className={`group bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md p-8 text-center hover:border-orange-500 dark:hover:border-orange-400 transition-all duration-500 ${
-                  featuresAnimation.isVisible ? 'scroll-visible' : 'scroll-hidden-scale'
-                }`}
-                style={{ transitionDelay: '400ms' }}
-              >
-                <div className=" w-16 h-16 rounded-md flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Target className="w-8 h-8 text-orange-500 dark:text-orange-400" />
+              <div className="bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md p-6 text-center">
+                <div className="w-12 h-12 rounded-md flex items-center justify-center mx-auto mb-3">
+                  <Target className="w-6 h-6 text-orange-500 dark:text-orange-400" />
                 </div>
-                <h4 className="text-gray-900 dark:text-white font-semibold text-lg mb-2">Multi-Scenario</h4>
-                <p className="text-gray-600 dark:text-white/70 text-sm font-light">Conservative to aggressive forecasts</p>
+                <h4 className="text-gray-900 dark:text-white font-medium text-sm mb-1">Multi-Scenario</h4>
+                <p className="text-gray-500 dark:text-white/50 text-xs">Conservative to aggressive forecasts</p>
+              </div>
+            </div>
+
+            {/* Stats Section */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-10">
+              <div className="text-center p-5 bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md">
+                <div className="text-2xl font-semibold text-gray-900 dark:text-white mb-1">1,000+</div>
+                <div className="text-xs text-gray-500 dark:text-white/50">Simulations</div>
+              </div>
+              <div className="text-center p-5 bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md">
+                <div className="text-2xl font-semibold text-gray-900 dark:text-white mb-1">3</div>
+                <div className="text-xs text-gray-500 dark:text-white/50">Scenarios</div>
+              </div>
+              <div className="text-center p-5 bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md">
+                <div className="text-2xl font-semibold text-gray-900 dark:text-white mb-1">5 Years</div>
+                <div className="text-xs text-gray-500 dark:text-white/50">Forecast</div>
+              </div>
+              <div className="text-center p-5 bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md">
+                <div className="text-2xl font-semibold text-gray-900 dark:text-white mb-1">Live</div>
+                <div className="text-xs text-gray-500 dark:text-white/50">Market Data</div>
               </div>
             </div>
 
             {/* Tech Stack Display */}
             <div 
               ref={techStackAnimation.ref}
-              className={`bg-white/50 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-md p-8 transition-all duration-1000 ${
+              className={`bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md p-6 transition-all duration-700 ${
                 techStackAnimation.isVisible ? 'scroll-visible' : 'scroll-hidden'
               }`}
             >
-              <div className="flex flex-col md:flex-row items-center justify-center gap-4 text-gray-900 dark:text-white flex-wrap">
-                <div className="text-center bg-gray-50 dark:bg-white/5 px-6 py-3 rounded-md border border-gray-200 dark:border-white/10 hover:scale-105 transition-transform">
-                  <p className="text-xs text-gray-600 dark:text-white/60 mb-1 font-semibold uppercase tracking-wide">Step 1</p>
-                  <p className="font-semibold text-sm">Exponential Smoothing</p>
+              <div className="flex flex-col md:flex-row items-center justify-center gap-3 text-gray-900 dark:text-white flex-wrap">
+                <div className="text-center bg-gray-100 dark:bg-white/5 px-5 py-2.5 rounded-md border border-gray-200 dark:border-white/10">
+                  <p className="text-xs text-gray-500 dark:text-white/50 mb-0.5 uppercase tracking-wide">Step 1</p>
+                  <p className="font-medium text-sm">Exponential Smoothing</p>
                 </div>
                 <div className="text-gray-400">→</div>
-                <div className="text-center bg-gray-50 dark:bg-white/5 px-6 py-3 rounded-md border border-gray-200 dark:border-white/10 hover:scale-105 transition-transform">
-                  <p className="text-xs text-gray-600 dark:text-white/60 mb-1 font-semibold uppercase tracking-wide">Step 2</p>
-                  <p className="font-semibold text-sm">Monte Carlo (GBM)</p>
+                <div className="text-center bg-gray-100 dark:bg-white/5 px-5 py-2.5 rounded-md border border-gray-200 dark:border-white/10">
+                  <p className="text-xs text-gray-500 dark:text-white/50 mb-0.5 uppercase tracking-wide">Step 2</p>
+                  <p className="font-medium text-sm">Monte Carlo (GBM)</p>
                 </div>
                 <div className="text-gray-400">→</div>
-                <div className="text-center bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 px-6 py-3 rounded-md border border-green-200 dark:border-green-500/30 hover:scale-105 transition-transform">
-                  <p className="text-xs text-gray-600 dark:text-white/60 mb-1 font-semibold uppercase tracking-wide">Step 3</p>
-                  <p className="font-semibold text-sm">Market Factors</p>
+                <div className="text-center bg-gray-100 dark:bg-white/5 px-5 py-2.5 rounded-md border border-gray-200 dark:border-white/10">
+                  <p className="text-xs text-gray-500 dark:text-white/50 mb-0.5 uppercase tracking-wide">Step 3</p>
+                  <p className="font-medium text-sm">Market Factors</p>
                 </div>
                 <div className="text-gray-400">→</div>
-                <div className="text-center bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-md shadow-lg hover:scale-105 transition-transform">
-                  <p className="text-xs mb-1 font-semibold uppercase tracking-wide opacity-90">Result</p>
-                  <p className="font-bold text-sm">ML Prediction</p>
+                <div className="text-center bg-green-500 text-white px-5 py-2.5 rounded-md">
+                  <p className="text-xs mb-0.5 uppercase tracking-wide opacity-80">Result</p>
+                  <p className="font-medium text-sm">ML Prediction</p>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       )}
