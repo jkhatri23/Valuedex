@@ -158,12 +158,13 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             {Object.keys(allGradesData.grades).map((grade) => (
               <Line
                 key={grade}
-                type="monotone"
+                type="natural"
                 dataKey={grade}
                 stroke={GRADE_COLORS[grade] || '#888'}
                 strokeWidth={grade === 'PSA 10' || grade === 'PSA 9' ? 2.5 : 1.5}
-                dot={false}
+                dot={{ fill: GRADE_COLORS[grade] || '#888', stroke: '#fff', strokeWidth: 1, r: 4 }}
                 name={grade}
+                connectNulls
               />
             ))}
           </LineChart>
@@ -418,14 +419,16 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             }}
           />
           <Legend />
+          {/* Line of best fit - smooth natural curve through data points */}
           <Line 
-            type="monotone" 
+            type="natural" 
             dataKey="price" 
             stroke="#3b82f6" 
-            strokeWidth={2}
-            dot={{ fill: '#3b82f6', r: 3 }}
-            activeDot={{ r: 5 }}
-            name="Market Price"
+            strokeWidth={2.5}
+            dot={{ fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 2, r: 5 }}
+            activeDot={{ r: 8, fill: '#2563eb', stroke: '#ffffff', strokeWidth: 2 }}
+            name="Trend Line"
+            connectNulls
           />
         </LineChart>
       </ResponsiveContainer>

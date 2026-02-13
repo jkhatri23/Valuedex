@@ -501,7 +501,7 @@ class PriceChartingScraper:
         iqr = q3 - q1
         
         # IQR bounds (use 2.5x for tolerance - keeps most real data)
-        lower_bound = max(10, q1 - 2.5 * iqr)  # Never go below $10
+        lower_bound = max(0.01, q1 - 2.5 * iqr)  # Allow low prices
         upper_bound = q3 + 2.5 * iqr
         
         # Filter
@@ -509,9 +509,42 @@ class PriceChartingScraper:
         
         if len(filtered) < len(sales):
             removed = len(sales) - len(filtered)
-            logger.info(f"{grade}: Removed {removed} outliers, kept {len(filtered)} (${lower_bound:.0f}-${upper_bound:.0f})")
+            logger.info(f"{grade}: Removed {removed} outliers, kept {len(filtered)} (${lower_bound:.2f}-${upper_bound:.2f})")
         
         return filtered
+    
+    def _select_consistent_points(self, sales: List[Dict], max_points: int = 15) -> List[Dict]:
+        """
+        Select up to max_points evenly distributed across the date range.
+        Ensures consistent spacing and filters to a tight price range.
+        """
+        if len(sales) <= max_points:
+            return sales
+        
+        # Sort by date
+        sorted_sales = sorted(sales, key=lambda x: x.get("date", ""))
+        
+        # Calculate step to get evenly distributed points
+        step = len(sorted_sales) / max_points
+        
+        selected = []
+        for i in range(max_points):
+            idx = int(i * step)
+            if idx < len(sorted_sales):
+                selected.append(sorted_sales[idx])
+        
+        # Ensure price consistency - remove any that deviate too much from median
+        if len(selected) >= 3:
+            prices = sorted([s["price"] for s in selected])
+            median_price = prices[len(prices) // 2]
+            
+            # Keep only points within 50% of median
+            consistent = [s for s in selected if 0.5 * median_price <= s["price"] <= 1.5 * median_price]
+            
+            if len(consistent) >= 5:
+                return consistent
+        
+        return selected
     
     def get_sales_history(self, url: str) -> Dict[str, List[Dict]]:
         """
@@ -580,12 +613,14 @@ class PriceChartingScraper:
             for sale in all_sales:
                 by_grade[sale["grade"]].append(sale)
             
-            # Apply IQR outlier filtering to each grade
+            # Apply IQR outlier filtering and limit to 15 consistent points per grade
             result = {}
             for grade, sales in by_grade.items():
                 filtered = self._filter_outliers(sales, grade)
                 if filtered:
-                    result[grade] = sorted(filtered, key=lambda x: x["date"])
+                    # Select up to 15 evenly distributed, consistent points
+                    consistent = self._select_consistent_points(filtered, max_points=15)
+                    result[grade] = sorted(consistent, key=lambda x: x["date"])
             
             self._cache[cache_key] = {"data": result, "time": time.time()}
             
