@@ -121,7 +121,7 @@ export default function Home() {
           
           {/* Main Hero */}
           <div className="text-center mb-20 md:mb-24 animate-fade-in relative z-10">
-            <h2 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-semibold text-gray-900 dark:text-white mb-8 md:mb-10 leading-[1.1] tracking-tight">
+            <h2 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-gray-900 dark:text-white mb-8 md:mb-10 leading-[1.1] tracking-tight">
               <span className="inline-block animate-slide-up" style={{ animationDelay: '100ms', opacity: 0, animationFillMode: 'forwards' }}>
                 Predict Your Card's
               </span>
