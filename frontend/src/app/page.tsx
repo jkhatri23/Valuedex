@@ -161,7 +161,7 @@ export default function Home() {
                   <button
                     key={card.id}
                     onClick={() => setSelectedCard(card)}
-                    className="group bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg p-5 hover:scale-[1.02] hover:border-gray-300 dark:hover:border-white/20 transition-all duration-300"
+                    className="group bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg p-5 hover:scale-105 hover:border-gray-300 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300"
                     style={{ 
                       transitionDelay: `${index * 50}ms`,
                       animationDelay: `${index * 100}ms`
@@ -172,7 +172,7 @@ export default function Home() {
                         <img
                           src={card.image_url}
                           alt={card.name}
-                          className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
+                          className="w-full h-full object-contain"
                         />
                       </div>
                     )}
