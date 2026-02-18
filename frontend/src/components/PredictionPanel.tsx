@@ -96,7 +96,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
           {[1, 2, 3, 5].map((year) => (
               <button
                 key={year}
-                onClick={() => setYearsAhead(year)}
+                onClick={() => { setYearsAhead(year); setPrediction(null); onPredictionGenerated?.(null) }}
                 className={`px-5 py-2.5 rounded-lg font-medium transition-all ${
                   yearsAhead === year
                     ? 'bg-gray-800 dark:bg-gray-600 text-white'
