@@ -5,14 +5,74 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional, Union
 from datetime import datetime
+import asyncio
 import logging
 
 from app.database import get_db
 from app.models.card import Card, PriceHistory, CardFeature, Prediction
 from app.ml.predictor import predictor
+from app.services.features import feature_service
+from app.services.pricecharting_scraper import pricecharting_scraper
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+async def _fetch_and_store_pricecharting_history(db, card) -> List[PriceHistory]:
+    """Fetch real sales data from PriceCharting and store it in the PriceHistory table."""
+    try:
+        search_results = await asyncio.to_thread(
+            pricecharting_scraper.search_card, card.name, card.set_name, card.card_number
+        )
+        if not search_results:
+            logger.warning(f"No PriceCharting results for {card.name} / {card.set_name}")
+            return []
+
+        best_match = None
+        for r in search_results:
+            if not r.get("is_first_edition"):
+                best_match = r
+                break
+        if not best_match:
+            best_match = search_results[0]
+
+        sales_by_grade = await asyncio.to_thread(
+            pricecharting_scraper.get_sales_history, best_match["url"]
+        )
+
+        sales = sales_by_grade.get("Ungraded", [])
+        if not sales:
+            for grade_sales in sales_by_grade.values():
+                if grade_sales:
+                    sales = grade_sales
+                    break
+
+        if not sales:
+            logger.warning(f"No sales history from PriceCharting for {card.name}")
+            return []
+
+        logger.info(f"Storing {len(sales)} PriceCharting data points for card {card.id} ({card.name})")
+        for sale in sales:
+            try:
+                sale_date = datetime.strptime(sale["date"], "%Y-%m-%d")
+            except (ValueError, KeyError):
+                continue
+            db.add(PriceHistory(
+                card_id=card.id,
+                date=sale_date,
+                price_loose=round(sale["price"], 2),
+                volume=1,
+                source="pricecharting_ebay"
+            ))
+        db.commit()
+
+        return db.query(PriceHistory).filter(
+            PriceHistory.card_id == card.id
+        ).order_by(PriceHistory.date.asc()).all()
+
+    except Exception as e:
+        logger.error(f"Failed to fetch PriceCharting history for {card.name}: {e}")
+        return []
 
 class PredictionRequest(BaseModel):
     card_id: Union[str, int, None] = ""
@@ -55,12 +115,27 @@ async def predict_card_price(request: PredictionRequest, db: Session = Depends(g
         PriceHistory.card_id == card.id
     ).order_by(PriceHistory.date.asc()).all()
     
+    # If insufficient price history, fetch real data from PriceCharting
+    if len(price_history) < 2:
+        logger.info(f"Insufficient price history for card {card.id} ({card.name}), fetching from PriceCharting...")
+        price_history = await _fetch_and_store_pricecharting_history(db, card)
+    
     if not price_history:
-        raise HTTPException(status_code=400, detail="No price history available")
+        raise HTTPException(status_code=400, detail="No price history available. PriceCharting has no sales data for this card.")
     
     features = db.query(CardFeature).filter(CardFeature.card_id == card.id).first()
+    
+    # Generate features if missing, using the most recent real price
     if not features:
-        raise HTTPException(status_code=400, detail="Features not calculated")
+        current_price = price_history[-1].price_loose or 0
+        if current_price > 0:
+            logger.info(f"Generating features for card {card.id} from PriceCharting price ${current_price}")
+            features_dict = feature_service.create_card_features(card, current_price, [])
+            features = CardFeature(card_id=card.id, **features_dict)
+            db.add(features)
+            db.commit()
+        else:
+            raise HTTPException(status_code=400, detail="No valid price data to generate features")
     
     price_data = [{"date": p.date, "price": p.price_loose} for p in price_history]
     

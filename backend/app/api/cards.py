@@ -202,6 +202,55 @@ async def get_card_detail(
                 db.commit()
                 features = new_features
     
+    # Ensure price history exists for predictions using real PriceCharting data
+    existing_history = db.query(PriceHistory).filter(
+        PriceHistory.card_id == card.id
+    ).count()
+    if existing_history < 2:
+        try:
+            from app.services.pricecharting_scraper import pricecharting_scraper
+            search_results = await asyncio.to_thread(
+                pricecharting_scraper.search_card, card.name, card.set_name, card.card_number
+            )
+            if search_results:
+                best_match = None
+                for r in search_results:
+                    if not r.get("is_first_edition"):
+                        best_match = r
+                        break
+                if not best_match:
+                    best_match = search_results[0]
+                sales_by_grade = await asyncio.to_thread(
+                    pricecharting_scraper.get_sales_history, best_match["url"]
+                )
+                sales = sales_by_grade.get("Ungraded", [])
+                if not sales:
+                    for grade_sales in sales_by_grade.values():
+                        if grade_sales:
+                            sales = grade_sales
+                            break
+                if sales:
+                    import logging as _log
+                    _log.getLogger(__name__).info(
+                        f"Storing {len(sales)} PriceCharting data points for card {card.id}"
+                    )
+                    for sale in sales:
+                        try:
+                            sale_date = datetime.strptime(sale["date"], "%Y-%m-%d")
+                        except (ValueError, KeyError):
+                            continue
+                        db.add(PriceHistory(
+                            card_id=card.id,
+                            date=sale_date,
+                            price_loose=round(sale["price"], 2),
+                            volume=1,
+                            source="pricecharting_ebay"
+                        ))
+                    db.commit()
+        except Exception as e:
+            import logging as _log
+            _log.getLogger(__name__).warning(f"Failed to fetch PriceCharting history: {e}")
+    
     return {
         "id": card.id,
         "external_id": card.external_id,
