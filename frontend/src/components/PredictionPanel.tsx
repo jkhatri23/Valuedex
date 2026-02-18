@@ -416,7 +416,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
               Target date: {new Date(prediction.target_date).toLocaleDateString()}
             </div>
             <div>
-              Uses crypto/financial forecasting techniques: Exponential Smoothing + Monte Carlo (1,000 simulations)
+              Uses financial forecasting techniques: Exponential Smoothing + Monte Carlo (1,000 simulations)
             </div>
           </div>
         </div>
