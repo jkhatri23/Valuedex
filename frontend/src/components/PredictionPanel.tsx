@@ -206,7 +206,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
                   <span className="text-sm font-medium text-gray-900 dark:text-white">Reward-Risk Ratio</span>
                   <BarChart3 className="w-4 h-4 text-gray-400" />
                 </div>
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {prediction.risk_assessment.reward_risk_ratio.toFixed(2)}x
                 </div>
                 <div className="text-xs text-gray-500 dark:text-white/60 mt-1">
@@ -220,7 +220,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
                   <span className="text-sm font-medium text-gray-900 dark:text-white">Volatility</span>
                   <Activity className="w-4 h-4 text-gray-400" />
                 </div>
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {(prediction.risk_assessment.volatility * 100).toFixed(1)}%
                 </div>
                 <div className="text-xs text-gray-500 dark:text-white/60 mt-1">Price stability</div>
@@ -395,13 +395,13 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
                 </div>
                 <div className="bg-white/60 rounded-lg p-4 dark:bg-black/20">
                   <span className="text-sm text-gray-600 dark:text-white/70">Time Series Weight</span>
-                  <div className="text-xl font-bold text-gray-900 dark:text-white mt-2">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                     ${prediction.insights.time_series_contribution.toFixed(2)}
                   </div>
                 </div>
                 <div className="bg-white/60 rounded-lg p-4 dark:bg-black/20">
                   <span className="text-sm text-gray-600 dark:text-white/70">Feature Weight</span>
-                  <div className="text-xl font-bold text-gray-900 dark:text-white mt-2">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                     ${prediction.insights.feature_contribution.toFixed(2)}
                   </div>
                 </div>
