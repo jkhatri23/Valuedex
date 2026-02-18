@@ -126,11 +126,8 @@ export default function InvestmentRating({ features, prediction }: InvestmentRat
     return <Minus className="w-6 h-6" />
   }
 
-  const getScoreColor = (score: number) => {
-    if (score >= 8) return 'text-green-600 dark:text-white'
-    if (score >= 6) return 'text-blue-600 dark:text-white'
-    if (score >= 4) return 'text-yellow-600 dark:text-white'
-    return 'text-red-600 dark:text-white'
+  const getScoreColor = (_score: number) => {
+    return 'text-gray-900 dark:text-white'
   }
 
   return (
@@ -194,19 +191,19 @@ export default function InvestmentRating({ features, prediction }: InvestmentRat
         <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Market Trends</h4>
         <div className="grid grid-cols-3 gap-3">
           <div className="text-center p-3 bg-gray-50/50 border border-gray-100/50 rounded-lg dark:bg-white/[0.02] dark:border-white/[0.04]">
-            <div className={`text-lg font-bold ${features.trend_30d >= 0 ? 'text-green-600 dark:text-white' : 'text-red-600 dark:text-white'}`}>
+            <div className="text-lg font-bold text-gray-900 dark:text-white">
               {features.trend_30d >= 0 ? '+' : ''}{features.trend_30d.toFixed(1)}%
             </div>
             <div className="text-xs text-gray-500 dark:text-white/60 mt-1">30 Days</div>
           </div>
           <div className="text-center p-3 bg-gray-50/50 border border-gray-100/50 rounded-lg dark:bg-white/[0.02] dark:border-white/[0.04]">
-            <div className={`text-lg font-bold ${features.trend_90d >= 0 ? 'text-green-600 dark:text-white' : 'text-red-600 dark:text-white'}`}>
+            <div className="text-lg font-bold text-gray-900 dark:text-white">
               {features.trend_90d >= 0 ? '+' : ''}{features.trend_90d.toFixed(1)}%
             </div>
             <div className="text-xs text-gray-500 dark:text-white/60 mt-1">90 Days</div>
           </div>
           <div className="text-center p-3 bg-gray-50/50 border border-gray-100/50 rounded-lg dark:bg-white/[0.02] dark:border-white/[0.04]">
-            <div className={`text-lg font-bold ${features.trend_1y >= 0 ? 'text-green-600 dark:text-white' : 'text-red-600 dark:text-white'}`}>
+            <div className="text-lg font-bold text-gray-900 dark:text-white">
               {features.trend_1y >= 0 ? '+' : ''}{features.trend_1y.toFixed(1)}%
             </div>
             <div className="text-xs text-gray-500 dark:text-white/60 mt-1">1 Year</div>
@@ -218,7 +215,7 @@ export default function InvestmentRating({ features, prediction }: InvestmentRat
       <div className="mt-4 p-4 bg-blue-50/50 border border-blue-100/50 rounded-lg dark:bg-white/[0.02] dark:border-white/[0.04]">
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-900 dark:text-white">Price Volatility</span>
-          <span className="text-sm font-semibold text-blue-600 dark:text-white">
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">
             {features.volatility.toFixed(1)}%
           </span>
         </div>

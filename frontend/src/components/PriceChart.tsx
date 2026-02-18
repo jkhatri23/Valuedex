@@ -123,19 +123,19 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="text-gray-500 dark:text-white/60">Best Value:</span>
-                <span className="ml-2 font-semibold text-blue-600 dark:text-white">
+                <span className="ml-2 font-semibold text-gray-900 dark:text-white">
                   {allGradesData.recommendations.best_value || 'N/A'}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-white/60">Best Growth:</span>
-                <span className="ml-2 font-semibold text-green-600 dark:text-white">
+                <span className="ml-2 font-semibold text-gray-900 dark:text-white">
                   {allGradesData.recommendations.best_growth || 'N/A'}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-white/60">Most Liquid:</span>
-                <span className="ml-2 font-semibold text-blue-600 dark:text-white">
+                <span className="ml-2 font-semibold text-gray-900 dark:text-white">
                   {allGradesData.recommendations.most_liquid || 'N/A'}
                 </span>
               </div>
@@ -183,19 +183,19 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="text-gray-500 dark:text-white/60">Loose (Raw):</span>
-                <span className="ml-2 font-semibold text-amber-600 dark:text-white">
+                <span className="ml-2 font-semibold text-gray-900 dark:text-white">
                   ${allGradesData.pricecharting_comparison.loose_price.toLocaleString()}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-white/60">CIB (Graded):</span>
-                <span className="ml-2 font-semibold text-orange-600 dark:text-white">
+                <span className="ml-2 font-semibold text-gray-900 dark:text-white">
                   ${allGradesData.pricecharting_comparison.cib_price.toLocaleString()}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-white/60">New (Sealed):</span>
-                <span className="ml-2 font-semibold text-red-600 dark:text-white">
+                <span className="ml-2 font-semibold text-gray-900 dark:text-white">
                   ${allGradesData.pricecharting_comparison.new_price.toLocaleString()}
                 </span>
               </div>
@@ -321,9 +321,9 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           {priceChange >= 0 ? (
-            <TrendingUp className="w-6 h-6 text-green-600" />
+            <TrendingUp className="w-6 h-6 text-gray-900 dark:text-white" />
           ) : (
-            <TrendingDown className="w-6 h-6 text-red-600" />
+            <TrendingDown className="w-6 h-6 text-gray-900 dark:text-white" />
           )}
           <div>
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -340,11 +340,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
         </div>
         <div className="flex items-center space-x-4">
           <div className="hidden sm:block text-right">
-            <div
-              className={`text-2xl font-bold ${
-                priceChange >= 0 ? 'text-green-600 dark:text-white' : 'text-red-600 dark:text-white'
-              }`}
-            >
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {priceChange >= 0 ? '+' : ''}
               {priceChangePercent.toFixed(1)}%
             </div>
@@ -444,7 +440,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             </div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-blue-600 dark:text-white">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
               ${lastPrice.toFixed(2)}
             </div>
             <div className="text-sm text-gray-600 dark:text-white/70 mt-1">
@@ -452,11 +448,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             </div>
           </div>
           <div>
-            <div
-              className={`text-2xl font-bold ${
-                priceChange >= 0 ? 'text-green-600 dark:text-white' : 'text-red-600 dark:text-white'
-              }`}
-            >
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {priceChange >= 0 ? '+' : ''}
               ${Math.abs(priceChange).toFixed(2)}
             </div>
