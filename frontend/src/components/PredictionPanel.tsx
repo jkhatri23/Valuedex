@@ -69,10 +69,10 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
   
   const getRiskLevelColor = (risk: string) => {
     switch (risk) {
-      case 'low': return 'text-green-600 dark:text-green-400'
-      case 'moderate': return 'text-yellow-600 dark:text-yellow-400'
-      case 'high': return 'text-red-600 dark:text-red-400'
-      default: return 'text-gray-600 dark:text-gray-400'
+      case 'low': return 'text-green-600 dark:text-white'
+      case 'moderate': return 'text-yellow-600 dark:text-white'
+      case 'high': return 'text-red-600 dark:text-white'
+      default: return 'text-gray-600 dark:text-white'
     }
   }
   
@@ -156,13 +156,13 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-4 text-center dark:bg-white/[0.02] dark:border-white/[0.04]">
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-1">Current</div>
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-300">
+                <div className="text-2xl font-bold text-blue-600 dark:text-white">
                   ${prediction.current_price.toFixed(2)}
                 </div>
               </div>
               <div className="bg-orange-50/50 border border-orange-100/50 rounded-lg p-4 text-center dark:bg-white/[0.02] dark:border-white/[0.04]">
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-1">Conservative</div>
-                <div className="text-2xl font-bold text-orange-600 dark:text-orange-300">
+                <div className="text-2xl font-bold text-orange-600 dark:text-white">
                   ${prediction.scenarios.conservative.toFixed(2)}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-white/60 mt-1">25th percentile</div>
@@ -176,7 +176,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
               </div>
               <div className="bg-green-50/50 border border-green-100/50 rounded-lg p-4 text-center dark:bg-white/[0.02] dark:border-white/[0.04]">
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-1">Aggressive</div>
-                <div className="text-2xl font-bold text-green-600 dark:text-green-300">
+                <div className="text-2xl font-bold text-green-600 dark:text-white">
                   ${prediction.scenarios.aggressive.toFixed(2)}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-white/60 mt-1">75th percentile</div>
@@ -192,7 +192,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
                 <span className="text-sm font-medium text-gray-900 dark:text-white">
                   Expected Growth: 
                   <span className={`ml-2 text-lg font-bold ${
-                    prediction.growth_rate >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    prediction.growth_rate >= 0 ? 'text-green-600 dark:text-white' : 'text-red-600 dark:text-white'
                   }`}>
                     {prediction.growth_rate >= 0 ? '+' : ''}{prediction.growth_rate.toFixed(1)}%
                   </span>
@@ -227,21 +227,21 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
                   <span className="text-sm font-medium text-gray-900 dark:text-white">Volatility</span>
                   <Activity className="w-4 h-4 text-gray-400" />
                 </div>
-                <div className="text-3xl font-bold text-blue-600 dark:text-blue-300">
+                <div className="text-3xl font-bold text-blue-600 dark:text-white">
                   {(prediction.risk_assessment.volatility * 100).toFixed(1)}%
                 </div>
                 <div className="text-xs text-gray-500 dark:text-white/60 mt-1">Price stability</div>
               </div>
               <div className="bg-red-50/50 border border-red-100/50 rounded-lg p-4 dark:bg-white/[0.02] dark:border-white/[0.04]">
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-1">Downside Risk</div>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-300">
+                <div className="text-2xl font-bold text-red-600 dark:text-white">
                   {prediction.risk_assessment.downside_risk_pct.toFixed(1)}%
                 </div>
                 <div className="text-xs text-gray-500 dark:text-white/60 mt-1">Potential loss (10th percentile)</div>
               </div>
               <div className="bg-green-50 border border-green-100 rounded-lg p-4 dark:bg-white/5 dark:border-white/10">
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-1">Upside Potential</div>
-                <div className="text-2xl font-bold text-green-600 dark:text-green-300">
+                <div className="text-2xl font-bold text-green-600 dark:text-white">
                   +{prediction.risk_assessment.upside_potential_pct.toFixed(1)}%
                 </div>
                 <div className="text-xs text-gray-500 dark:text-white/60 mt-1">Potential gain (90th percentile)</div>
@@ -353,20 +353,20 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
               </div>
               <div>
                 <span className="text-sm text-gray-600 dark:text-white/70">Sentiment Multiplier</span>
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-300">
+                <div className="text-2xl font-bold text-blue-600 dark:text-white">
                   {prediction.market_factors.sentiment_multiplier.toFixed(2)}x
                 </div>
               </div>
               <div>
                 <span className="text-sm text-gray-600 dark:text-white/70">Current Trend</span>
-                <div className="text-2xl font-bold text-green-600 dark:text-green-300">
+                <div className="text-2xl font-bold text-green-600 dark:text-white">
                   {prediction.market_factors.current_trend >= 0 ? '+' : ''}
                   {prediction.market_factors.current_trend.toFixed(2)}
                 </div>
               </div>
               <div>
                 <span className="text-sm text-gray-600 dark:text-white/70">Market Sentiment</span>
-                <div className="text-2xl font-bold text-orange-600 dark:text-orange-300">
+                <div className="text-2xl font-bold text-orange-600 dark:text-white">
                   {prediction.market_factors.market_sentiment ? 
                     `${prediction.market_factors.market_sentiment.toFixed(0)}/100` : 
                     'N/A'}
@@ -402,13 +402,13 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
                 </div>
                 <div className="bg-white/60 rounded-lg p-4 dark:bg-black/20">
                   <span className="text-sm text-gray-600 dark:text-white/70">Time Series Weight</span>
-                  <div className="text-xl font-bold text-blue-600 dark:text-blue-300 mt-2">
+                  <div className="text-xl font-bold text-blue-600 dark:text-white mt-2">
                     ${prediction.insights.time_series_contribution.toFixed(2)}
                   </div>
                 </div>
                 <div className="bg-white/60 rounded-lg p-4 dark:bg-black/20">
                   <span className="text-sm text-gray-600 dark:text-white/70">Feature Weight</span>
-                  <div className="text-xl font-bold text-green-600 dark:text-green-300 mt-2">
+                  <div className="text-xl font-bold text-green-600 dark:text-white mt-2">
                     ${prediction.insights.feature_contribution.toFixed(2)}
                   </div>
                 </div>

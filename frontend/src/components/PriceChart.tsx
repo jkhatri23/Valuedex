@@ -123,19 +123,19 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="text-gray-500 dark:text-white/60">Best Value:</span>
-                <span className="ml-2 font-semibold text-blue-600 dark:text-blue-400">
+                <span className="ml-2 font-semibold text-blue-600 dark:text-white">
                   {allGradesData.recommendations.best_value || 'N/A'}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-white/60">Best Growth:</span>
-                <span className="ml-2 font-semibold text-green-600 dark:text-green-400">
+                <span className="ml-2 font-semibold text-green-600 dark:text-white">
                   {allGradesData.recommendations.best_growth || 'N/A'}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-white/60">Most Liquid:</span>
-                <span className="ml-2 font-semibold text-blue-600 dark:text-blue-400">
+                <span className="ml-2 font-semibold text-blue-600 dark:text-white">
                   {allGradesData.recommendations.most_liquid || 'N/A'}
                 </span>
               </div>
@@ -183,19 +183,19 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="text-gray-500 dark:text-white/60">Loose (Raw):</span>
-                <span className="ml-2 font-semibold text-amber-600 dark:text-amber-400">
+                <span className="ml-2 font-semibold text-amber-600 dark:text-white">
                   ${allGradesData.pricecharting_comparison.loose_price.toLocaleString()}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-white/60">CIB (Graded):</span>
-                <span className="ml-2 font-semibold text-orange-600 dark:text-orange-400">
+                <span className="ml-2 font-semibold text-orange-600 dark:text-white">
                   ${allGradesData.pricecharting_comparison.cib_price.toLocaleString()}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-white/60">New (Sealed):</span>
-                <span className="ml-2 font-semibold text-red-600 dark:text-red-400">
+                <span className="ml-2 font-semibold text-red-600 dark:text-white">
                   ${allGradesData.pricecharting_comparison.new_price.toLocaleString()}
                 </span>
               </div>
@@ -342,7 +342,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
           <div className="hidden sm:block text-right">
             <div
               className={`text-2xl font-bold ${
-                priceChange >= 0 ? 'text-green-600' : 'text-red-600'
+                priceChange >= 0 ? 'text-green-600 dark:text-white' : 'text-red-600 dark:text-white'
               }`}
             >
               {priceChange >= 0 ? '+' : ''}
@@ -444,7 +444,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             </div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-blue-600 dark:text-white">
               ${lastPrice.toFixed(2)}
             </div>
             <div className="text-sm text-gray-600 dark:text-white/70 mt-1">
@@ -454,7 +454,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
           <div>
             <div
               className={`text-2xl font-bold ${
-                priceChange >= 0 ? 'text-green-600' : 'text-red-600'
+                priceChange >= 0 ? 'text-green-600 dark:text-white' : 'text-red-600 dark:text-white'
               }`}
             >
               {priceChange >= 0 ? '+' : ''}
