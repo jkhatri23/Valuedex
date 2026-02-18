@@ -374,7 +374,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">AI Analysis</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white/60 rounded-lg p-4 dark:bg-black/20">
-                  <span className="text-sm text-gray-600 dark:text-white/70">Investment Rating</span>
+                  <span className="text-sm text-gray-600 dark:text-white/70">Investment Rating </span>
                   <div className={`mt-2 inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${
                     prediction.insights.investment_rating === 'Strong Buy' 
                       ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200'
