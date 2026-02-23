@@ -87,7 +87,7 @@ npm run dev
 - **Supabase** - PostgreSQL database
 - **PriceCharting API** - Market data
 
-## 🎯 How It Works
+#🎯 How It Works
 
 ### Price Prediction Model
 
