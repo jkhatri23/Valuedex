@@ -36,10 +36,11 @@ class PriceChartingScraper:
         """Convert card/set name to URL-friendly format."""
         # Lowercase
         name = name.lower()
-        # Remove apostrophes completely (Blaine's -> Blaines)
-        name = name.replace("'", "")
+        # URL-encode apostrophes (Blaine's -> blaine%27s) - PriceCharting keeps them
+        name = name.replace("'", "%27")
+        name = name.replace("'", "%27")  # Handle curly apostrophes too
         # Replace other special chars with dashes
-        name = re.sub(r'[^a-z0-9]+', '-', name)
+        name = re.sub(r'[^a-z0-9%]+', '-', name)
         # Remove leading/trailing dashes
         name = name.strip('-')
         return name
@@ -82,82 +83,404 @@ class PriceChartingScraper:
         
         return f"{self.BASE_URL}/game/{set_slug}/{card_slug}"
     
-    def search_card(self, card_name: str, set_name: str = None) -> List[Dict]:
+    def search_card(self, card_name: str, set_name: str = None, card_number: str = None) -> List[Dict]:
         """Find Pokemon card URLs on PriceCharting using direct URL construction."""
         if not set_name:
             set_name = "Base Set"
         
-        cache_key = f"search_{card_name}_{set_name}"
+        cache_key = f"search_{card_name}_{set_name}_{card_number}"
         if cache_key in self._cache:
             return self._cache[cache_key].get("data", [])
         
         results = []
         
+        # Get the English set slug only
+        set_slug = self._get_set_slug(set_name)
+        card_slug = self._normalize_for_url(card_name)
+        
         # Try common URL patterns for Pokemon cards
-        # Most cards have format: /game/pokemon-set-name/card-name-number
         possible_urls = []
         
-        # Try with common card numbers (for holo rare cards like Charizard)
-        for num in [4, 1, 2, 3, 5, 6, 7, 8, 9, 10]:
-            url = self._build_card_url(card_name, set_name, str(num))
-            possible_urls.append(url)
+        # If we have the actual card number, try it first
+        if card_number:
+            num = card_number.split('/')[0].strip()
+            possible_urls.append(f"{self.BASE_URL}/game/{set_slug}/{card_slug}-{num}")
+        
+        # Then try common card numbers as fallback
+        for num in [6, 4, 1, 2, 3, 5, 7, 8, 9, 10, 15, 20]:
+            url = f"{self.BASE_URL}/game/{set_slug}/{card_slug}-{num}"
+            if url not in possible_urls:
+                possible_urls.append(url)
         
         # Also try without number
-        url_no_num = self._build_card_url(card_name, set_name)
-        possible_urls.append(url_no_num)
+        url_no_num = f"{self.BASE_URL}/game/{set_slug}/{card_slug}"
+        if url_no_num not in possible_urls:
+            possible_urls.append(url_no_num)
         
         # Test each URL
         for url in possible_urls:
             try:
-                response = self.session.get(url, timeout=10)
+                response = self.session.get(url, timeout=10, allow_redirects=True)
+                # Check if we got redirected to a search page (meaning URL doesn't exist)
+                if 'search-products' in response.url:
+                    continue
+                # Skip Japanese cards - only use English card prices
+                if 'japanese' in response.url.lower():
+                    logger.debug(f"Skipping Japanese card URL: {response.url}")
+                    continue
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, 'lxml')
                     title = soup.select_one('h1')
                     
                     if title:
                         title_text = title.get_text(strip=True)
-                        # Check if it's the right card
-                        if card_name.lower() in title_text.lower():
+                        # Skip if title indicates Japanese card
+                        if 'japanese' in title_text.lower():
+                            logger.debug(f"Skipping Japanese card: {title_text}")
+                            continue
+                        # Check if it's the right card (be more lenient with name matching)
+                        card_name_simple = card_name.lower().replace("'", "").replace("'", "")
+                        title_simple = title_text.lower().replace("'", "").replace("'", "")
+                        if card_name_simple in title_simple:
                             is_first_ed = '1st' in title_text.lower() or 'first' in title_text.lower()
                             results.append({
                                 "name": title_text,
-                                "url": url,
+                                "url": response.url,  # Use final URL after redirects
                                 "is_first_edition": is_first_ed,
                             })
-                            logger.info(f"Found card: {title_text} at {url}")
+                            logger.info(f"Found card: {title_text} at {response.url}")
                             break  # Found one, stop looking
             except Exception as e:
                 continue
         
+        # If direct URL attempts failed, try search-based fallback
+        if not results:
+            logger.info(f"Direct URL failed for {card_name}, trying search fallback...")
+            search_results = self._search_via_website(card_name, set_name)
+            if search_results:
+                results = search_results
+        
         self._cache[cache_key] = {"data": results, "time": time.time()}
         return results
     
-    def get_card_prices(self, url: str) -> Dict:
-        """Get current prices for a card from its PriceCharting page."""
+    def _search_via_website(self, card_name: str, set_name: str = None) -> List[Dict]:
+        """Search for a card using PriceCharting's search page as a fallback."""
         try:
-            response = self.session.get(url, timeout=15)
+            # Build search query
+            search_query = f"pokemon {card_name}"
+            if set_name:
+                search_query += f" {set_name}"
+            
+            search_url = f"{self.BASE_URL}/search-products?q={search_query.replace(' ', '+')}&type=prices"
+            logger.debug(f"Searching via URL: {search_url}")
+            
+            response = self.session.get(search_url, timeout=15)
+            if response.status_code != 200:
+                return []
+            
             soup = BeautifulSoup(response.text, 'lxml')
-            html = response.text
+            results = []
+            
+            # Find search results - they're typically in table rows or links
+            # PriceCharting uses various selectors for results
+            result_links = soup.select('table.products a, .offer a, a[href*="/game/pokemon-"]')
+            
+            card_name_lower = card_name.lower().replace("'", "").replace("'", "")
+            
+            for link in result_links[:20]:  # Check first 20 results
+                href = link.get('href', '')
+                text = link.get_text(strip=True).lower()
+                
+                # Skip Japanese cards
+                if 'japanese' in href.lower() or 'japanese' in text:
+                    continue
+                
+                # Check if this looks like the right card
+                text_simple = text.replace("'", "").replace("'", "")
+                if card_name_lower in text_simple and '/game/pokemon-' in href:
+                    # Build full URL if relative
+                    if href.startswith('/'):
+                        full_url = f"{self.BASE_URL}{href}"
+                    else:
+                        full_url = href
+                    
+                    # Verify this is the right card by checking set name if provided
+                    if set_name:
+                        set_lower = set_name.lower().replace(" ", "-")
+                        if set_lower not in href.lower() and set_lower.replace("-", "") not in href.lower():
+                            # Set doesn't match, but might still be right card
+                            # Only skip if we have a better match
+                            continue
+                    
+                    is_first_ed = '1st' in text or 'first' in text
+                    results.append({
+                        "name": link.get_text(strip=True),
+                        "url": full_url,
+                        "is_first_edition": is_first_ed,
+                    })
+                    logger.info(f"Found via search: {link.get_text(strip=True)} at {full_url}")
+                    
+                    # Return first good match
+                    if results:
+                        break
+            
+            return results
+            
+        except Exception as e:
+            logger.warning(f"Search fallback failed: {e}")
+            return []
+    
+    def _get_set_slug(self, set_name: str) -> str:
+        """Get the PriceCharting set slug for a set name."""
+        # Comprehensive mapping of set names to PriceCharting URL slugs
+        SET_NAME_MAP = {
+            # Base era
+            "base": "pokemon-base-set",
+            "base set": "pokemon-base-set",
+            "jungle": "pokemon-jungle",
+            "fossil": "pokemon-fossil",
+            "base set 2": "pokemon-base-set-2",
+            # Team Rocket era
+            "team rocket": "pokemon-team-rocket",
+            "team rocket returns": "pokemon-team-rocket-returns",
+            # Gym era
+            "gym heroes": "pokemon-gym-heroes",
+            "gym challenge": "pokemon-gym-challenge",
+            # Neo era
+            "neo genesis": "pokemon-neo-genesis",
+            "neo discovery": "pokemon-neo-discovery",
+            "neo revelation": "pokemon-neo-revelation",
+            "neo destiny": "pokemon-neo-destiny",
+            # Legendary/e-Card era
+            "legendary collection": "pokemon-legendary-collection",
+            "expedition": "pokemon-expedition-base-set",
+            "expedition base set": "pokemon-expedition-base-set",
+            "aquapolis": "pokemon-aquapolis",
+            "skyridge": "pokemon-skyridge",
+            # Ruby & Sapphire era
+            "ruby & sapphire": "pokemon-ruby-sapphire",
+            "ruby and sapphire": "pokemon-ruby-sapphire",
+            "sandstorm": "pokemon-sandstorm",
+            "dragon": "pokemon-dragon",
+            "team magma vs team aqua": "pokemon-team-magma-vs-team-aqua",
+            "hidden legends": "pokemon-hidden-legends",
+            "firered & leafgreen": "pokemon-firered-leafgreen",
+            "team rocket returns": "pokemon-team-rocket-returns",
+            "deoxys": "pokemon-deoxys",
+            "emerald": "pokemon-emerald",
+            "unseen forces": "pokemon-unseen-forces",
+            "delta species": "pokemon-delta-species",
+            "legend maker": "pokemon-legend-maker",
+            "holon phantoms": "pokemon-holon-phantoms",
+            "crystal guardians": "pokemon-crystal-guardians",
+            "dragon frontiers": "pokemon-dragon-frontiers",
+            "power keepers": "pokemon-power-keepers",
+            # Diamond & Pearl era
+            "diamond & pearl": "pokemon-diamond-pearl",
+            "diamond and pearl": "pokemon-diamond-pearl",
+            "mysterious treasures": "pokemon-mysterious-treasures",
+            "secret wonders": "pokemon-secret-wonders",
+            "great encounters": "pokemon-great-encounters",
+            "majestic dawn": "pokemon-majestic-dawn",
+            "legends awakened": "pokemon-legends-awakened",
+            "stormfront": "pokemon-stormfront",
+            # Platinum era
+            "platinum": "pokemon-platinum",
+            "rising rivals": "pokemon-rising-rivals",
+            "supreme victors": "pokemon-supreme-victors",
+            "arceus": "pokemon-arceus",
+            # HeartGold SoulSilver era
+            "heartgold soulsilver": "pokemon-heartgold-soulsilver",
+            "heartgold & soulsilver": "pokemon-heartgold-soulsilver",
+            "unleashed": "pokemon-unleashed",
+            "undaunted": "pokemon-undaunted",
+            "triumphant": "pokemon-triumphant",
+            "call of legends": "pokemon-call-of-legends",
+            # Black & White era
+            "black & white": "pokemon-black-white",
+            "black and white": "pokemon-black-white",
+            "emerging powers": "pokemon-emerging-powers",
+            "noble victories": "pokemon-noble-victories",
+            "next destinies": "pokemon-next-destinies",
+            "dark explorers": "pokemon-dark-explorers",
+            "dragons exalted": "pokemon-dragons-exalted",
+            "dragon vault": "pokemon-dragon-vault",
+            "boundaries crossed": "pokemon-boundaries-crossed",
+            "plasma storm": "pokemon-plasma-storm",
+            "plasma freeze": "pokemon-plasma-freeze",
+            "plasma blast": "pokemon-plasma-blast",
+            "legendary treasures": "pokemon-legendary-treasures",
+            # XY era
+            "xy": "pokemon-xy",
+            "flashfire": "pokemon-flashfire",
+            "furious fists": "pokemon-furious-fists",
+            "phantom forces": "pokemon-phantom-forces",
+            "primal clash": "pokemon-primal-clash",
+            "roaring skies": "pokemon-roaring-skies",
+            "ancient origins": "pokemon-ancient-origins",
+            "breakthrough": "pokemon-breakthrough",
+            "breakpoint": "pokemon-breakpoint",
+            "fates collide": "pokemon-fates-collide",
+            "steam siege": "pokemon-steam-siege",
+            "evolutions": "pokemon-evolutions",
+            # Sun & Moon era
+            "sun & moon": "pokemon-sun-moon",
+            "sun and moon": "pokemon-sun-moon",
+            "guardians rising": "pokemon-guardians-rising",
+            "burning shadows": "pokemon-burning-shadows",
+            "shining legends": "pokemon-shining-legends",
+            "crimson invasion": "pokemon-crimson-invasion",
+            "ultra prism": "pokemon-ultra-prism",
+            "forbidden light": "pokemon-forbidden-light",
+            "celestial storm": "pokemon-celestial-storm",
+            "dragon majesty": "pokemon-dragon-majesty",
+            "lost thunder": "pokemon-lost-thunder",
+            "team up": "pokemon-team-up",
+            "unbroken bonds": "pokemon-unbroken-bonds",
+            "unified minds": "pokemon-unified-minds",
+            "hidden fates": "pokemon-hidden-fates",
+            "cosmic eclipse": "pokemon-cosmic-eclipse",
+            # Sword & Shield era
+            "sword & shield": "pokemon-sword-shield",
+            "sword and shield": "pokemon-sword-shield",
+            "rebel clash": "pokemon-rebel-clash",
+            "darkness ablaze": "pokemon-darkness-ablaze",
+            "champions path": "pokemon-champions-path",
+            "vivid voltage": "pokemon-vivid-voltage",
+            "shining fates": "pokemon-shining-fates",
+            "battle styles": "pokemon-battle-styles",
+            "chilling reign": "pokemon-chilling-reign",
+            "evolving skies": "pokemon-evolving-skies",
+            "celebrations": "pokemon-celebrations",
+            "fusion strike": "pokemon-fusion-strike",
+            "brilliant stars": "pokemon-brilliant-stars",
+            "astral radiance": "pokemon-astral-radiance",
+            "pokemon go": "pokemon-pokemon-go",
+            "lost origin": "pokemon-lost-origin",
+            "silver tempest": "pokemon-silver-tempest",
+            "crown zenith": "pokemon-crown-zenith",
+            # Scarlet & Violet era
+            "scarlet & violet": "pokemon-scarlet-violet",
+            "scarlet and violet": "pokemon-scarlet-violet",
+            "paldea evolved": "pokemon-paldea-evolved",
+            "obsidian flames": "pokemon-obsidian-flames",
+            "151": "pokemon-151",
+            "paradox rift": "pokemon-paradox-rift",
+            "paldean fates": "pokemon-paldean-fates",
+            "temporal forces": "pokemon-temporal-forces",
+            "twilight masquerade": "pokemon-twilight-masquerade",
+            "shrouded fable": "pokemon-shrouded-fable",
+            "stellar crown": "pokemon-stellar-crown",
+            "surging sparks": "pokemon-surging-sparks",
+            # Promos
+            "black star promos": "pokemon-black-star-promos",
+            "wizards black star promos": "pokemon-wizards-black-star-promos",
+            "swsh black star promos": "pokemon-swsh-black-star-promos",
+            "sv black star promos": "pokemon-sv-black-star-promos",
+        }
+        set_lower = set_name.lower().strip()
+        if set_lower in SET_NAME_MAP:
+            return SET_NAME_MAP[set_lower]
+        slug = self._normalize_for_url(set_name)
+        if not slug.startswith('pokemon-'):
+            slug = f"pokemon-{slug}"
+        return slug
+    
+    def get_card_prices(self, url: str) -> Dict:
+        """Get current prices for a card from its PriceCharting page using actual sales data."""
+        try:
+            # Use actual sales history for more accurate pricing
+            sales_by_grade = self.get_sales_history(url)
             
             prices = {}
             
-            # Extract current prices
-            # Look for price table or price elements
-            ungraded_match = re.search(r'Ungraded[^$]*\$([0-9,.]+)', html)
-            if ungraded_match:
-                prices["ungraded"] = float(ungraded_match.group(1).replace(',', ''))
+            for grade, sales in sales_by_grade.items():
+                if not sales:
+                    continue
+                
+                # Sort by date descending to get recent sales
+                sorted_sales = sorted(sales, key=lambda x: x.get("date", ""), reverse=True)
+                
+                # Use median of recent sales (up to last 10) for stability
+                recent_prices = [s["price"] for s in sorted_sales[:10]]
+                if recent_prices:
+                    recent_prices.sort()
+                    mid = len(recent_prices) // 2
+                    if len(recent_prices) % 2 == 0:
+                        median_price = (recent_prices[mid-1] + recent_prices[mid]) / 2
+                    else:
+                        median_price = recent_prices[mid]
+                    
+                    # Map grade name to key
+                    if grade == "Ungraded":
+                        prices["ungraded"] = round(median_price, 2)
+                    else:
+                        prices[grade] = round(median_price, 2)
             
-            # Look for graded prices
-            for grade in range(1, 11):
-                pattern = rf'(?:PSA|Grade)\s*{grade}[^$]*\$([0-9,.]+)'
-                match = re.search(pattern, html, re.IGNORECASE)
-                if match:
-                    prices[f"PSA {grade}"] = float(match.group(1).replace(',', ''))
+            # If no prices from sales history, try to scrape displayed price
+            if not prices:
+                logger.info(f"No sales history found, trying to scrape displayed price from {url}")
+                prices = self._scrape_displayed_price(url)
             
+            logger.info(f"Extracted prices: {prices}")
             return prices
             
         except Exception as e:
             logger.error(f"Failed to get prices: {e}")
+            return {}
+    
+    def _scrape_displayed_price(self, url: str) -> Dict:
+        """Scrape the displayed price from the page when sales history is unavailable."""
+        try:
+            response = self.session.get(url, timeout=15)
+            if response.status_code != 200:
+                return {}
+            
+            html = response.text
+            prices = {}
+            
+            # Try multiple patterns used by PriceCharting
+            # Pattern 1: Look for price in the main price display
+            price_patterns = [
+                r'class="price"[^>]*>\s*\$([0-9,.]+)',
+                r'Ungraded[^$]*\$([0-9,.]+)',
+                r'Loose[^$]*\$([0-9,.]+)',
+                r'id="used_price"[^>]*>\s*\$([0-9,.]+)',
+                r'data-price="([0-9,.]+)"',
+            ]
+            
+            for pattern in price_patterns:
+                match = re.search(pattern, html, re.IGNORECASE)
+                if match:
+                    try:
+                        price = float(match.group(1).replace(',', ''))
+                        if price > 0 and price != 6.00:  # Skip subscription price
+                            prices["ungraded"] = round(price, 2)
+                            break
+                    except ValueError:
+                        continue
+            
+            # Try to get graded prices
+            for grade in range(1, 11):
+                patterns = [
+                    rf'PSA\s*{grade}[^$]*\$([0-9,.]+)',
+                    rf'Grade\s*{grade}[^$]*\$([0-9,.]+)',
+                ]
+                for pattern in patterns:
+                    match = re.search(pattern, html, re.IGNORECASE)
+                    if match:
+                        try:
+                            price = float(match.group(1).replace(',', ''))
+                            if price > 0:
+                                prices[f"PSA {grade}"] = round(price, 2)
+                                break
+                        except ValueError:
+                            continue
+            
+            return prices
+            
+        except Exception as e:
+            logger.warning(f"Failed to scrape displayed price: {e}")
             return {}
     
     def _filter_outliers(self, sales: List[Dict], grade: str) -> List[Dict]:
@@ -178,7 +501,7 @@ class PriceChartingScraper:
         iqr = q3 - q1
         
         # IQR bounds (use 2.5x for tolerance - keeps most real data)
-        lower_bound = max(10, q1 - 2.5 * iqr)  # Never go below $10
+        lower_bound = max(0.01, q1 - 2.5 * iqr)  # Allow low prices
         upper_bound = q3 + 2.5 * iqr
         
         # Filter
@@ -186,9 +509,42 @@ class PriceChartingScraper:
         
         if len(filtered) < len(sales):
             removed = len(sales) - len(filtered)
-            logger.info(f"{grade}: Removed {removed} outliers, kept {len(filtered)} (${lower_bound:.0f}-${upper_bound:.0f})")
+            logger.info(f"{grade}: Removed {removed} outliers, kept {len(filtered)} (${lower_bound:.2f}-${upper_bound:.2f})")
         
         return filtered
+    
+    def _select_consistent_points(self, sales: List[Dict], max_points: int = 15) -> List[Dict]:
+        """
+        Select up to max_points evenly distributed across the date range.
+        Ensures consistent spacing and filters to a tight price range.
+        """
+        if len(sales) <= max_points:
+            return sales
+        
+        # Sort by date
+        sorted_sales = sorted(sales, key=lambda x: x.get("date", ""))
+        
+        # Calculate step to get evenly distributed points
+        step = len(sorted_sales) / max_points
+        
+        selected = []
+        for i in range(max_points):
+            idx = int(i * step)
+            if idx < len(sorted_sales):
+                selected.append(sorted_sales[idx])
+        
+        # Ensure price consistency - remove any that deviate too much from median
+        if len(selected) >= 3:
+            prices = sorted([s["price"] for s in selected])
+            median_price = prices[len(prices) // 2]
+            
+            # Keep only points within 50% of median
+            consistent = [s for s in selected if 0.5 * median_price <= s["price"] <= 1.5 * median_price]
+            
+            if len(consistent) >= 5:
+                return consistent
+        
+        return selected
     
     def get_sales_history(self, url: str) -> Dict[str, List[Dict]]:
         """
@@ -228,8 +584,8 @@ class PriceChartingScraper:
                 
                 price = float(price_match.group(1).replace(',', ''))
                 
-                # Skip subscription price and invalid prices
-                if price < 10 or price == 6.00:
+                # Skip subscription price (exactly $6.00) and negative prices
+                if price == 6.00 or price <= 0:
                     continue
                 
                 # Determine PSA grade
@@ -257,12 +613,14 @@ class PriceChartingScraper:
             for sale in all_sales:
                 by_grade[sale["grade"]].append(sale)
             
-            # Apply IQR outlier filtering to each grade
+            # Apply IQR outlier filtering and limit to 15 consistent points per grade
             result = {}
             for grade, sales in by_grade.items():
                 filtered = self._filter_outliers(sales, grade)
                 if filtered:
-                    result[grade] = sorted(filtered, key=lambda x: x["date"])
+                    # Select up to 15 evenly distributed, consistent points
+                    consistent = self._select_consistent_points(filtered, max_points=15)
+                    result[grade] = sorted(consistent, key=lambda x: x["date"])
             
             self._cache[cache_key] = {"data": result, "time": time.time()}
             

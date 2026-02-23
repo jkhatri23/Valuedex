@@ -4,10 +4,13 @@ from contextlib import asynccontextmanager
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from app.api import cards, predictions, admin
-from app.database import engine, Base
+from app.database import engine, Base, SessionLocal
 from app.price_database import price_engine, PriceBase
+from app.models.card import Card, CardFeature, PriceHistory
 from app.services.pokemon_tcg_sync import pokemon_tcg_sync
+from app.services.features import feature_service
 import logging
+import threading
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,9 +32,84 @@ def daily_update_job():
     else:
         logger.error(f"Daily update failed: {result.get('message', 'Unknown error')}")
 
+def fix_missing_features():
+    """Add CardFeature records to cards that don't have them"""
+    db = SessionLocal()
+    try:
+        # Find cards without features
+        cards_without_features = db.query(Card).outerjoin(CardFeature).filter(
+            CardFeature.id == None
+        ).all()
+        
+        if not cards_without_features:
+            logger.info("All cards have features. No fix needed.")
+            return
+        
+        logger.info(f"Found {len(cards_without_features)} cards without features. Creating...")
+        
+        created = 0
+        for card in cards_without_features:
+            # Get the most recent price for this card
+            latest_price = db.query(PriceHistory).filter(
+                PriceHistory.card_id == card.id
+            ).order_by(PriceHistory.date.desc()).first()
+            
+            current_price = latest_price.price_loose if latest_price else 0
+            
+            # Create features
+            features_dict = feature_service.create_card_features(card, current_price, [])
+            card_feature = CardFeature(card_id=card.id, **features_dict)
+            db.add(card_feature)
+            created += 1
+            
+            # Commit in batches
+            if created % 100 == 0:
+                db.commit()
+                logger.info(f"Created features for {created}/{len(cards_without_features)} cards...")
+        
+        db.commit()
+        logger.info(f"Created features for {created} cards")
+        
+    except Exception as e:
+        logger.error(f"Error fixing missing features: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+def initial_populate_job():
+    """Populate database with cards from Pokemon TCG API on first startup"""
+    db = SessionLocal()
+    try:
+        # Check if database needs population (fewer than 100 cards means it's likely empty or minimal)
+        card_count = db.query(Card).count()
+        logger.info(f"Database has {card_count} cards")
+        
+        if card_count < 100:
+            logger.info("Database needs population. Fetching cards from Pokemon TCG API...")
+            result = pokemon_tcg_sync.populate_database(max_cards=1000)
+            if result.get("success"):
+                logger.info(f"Initial population successful: {result.get('saved', 0)} cards saved, {result.get('updated', 0)} updated")
+            else:
+                logger.error(f"Initial population failed: {result.get('message', 'Unknown error')}")
+        else:
+            logger.info("Database already populated. Skipping initial population.")
+        
+        # Fix any cards missing features
+        fix_missing_features()
+        
+    except Exception as e:
+        logger.error(f"Error during initial population check: {e}")
+    finally:
+        db.close()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Startup - Run initial population in background thread so server starts quickly
+    populate_thread = threading.Thread(target=initial_populate_job, daemon=True)
+    populate_thread.start()
+    logger.info("Started background database population check...")
+    
+    # Schedule daily updates
     scheduler.add_job(
         daily_update_job,
         trigger=CronTrigger(hour=2, minute=0),  # Run at 2 AM daily

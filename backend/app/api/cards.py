@@ -145,9 +145,112 @@ async def get_card_detail(
         card = _create_card_from_api(db, card_id, card_data)
     
     features = db.query(CardFeature).filter(CardFeature.card_id == card.id).first()
+    current_price = features.current_price if features else 0
     
-    # Return immediately with database data, fetch prices in background would be slower
-    # So we skip the eBay price fetch here for speed
+    # If no price, try to fetch from Pokemon TCG API
+    if current_price == 0 and card.external_id:
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Try Pokemon TCG API first
+        try:
+            tcg_card = await asyncio.wait_for(
+                asyncio.to_thread(pokemon_tcg_service.get_card_by_id, card.external_id),
+                timeout=5.0
+            )
+            if tcg_card and tcg_card.get("current_price", 0) > 0:
+                current_price = tcg_card.get("current_price", 0)
+        except (asyncio.TimeoutError, Exception) as e:
+            logger.warning(f"Pokemon TCG API failed for {card.external_id}: {e}")
+        
+        # Fallback to PriceCharting if still no price
+        if current_price == 0:
+            try:
+                from app.services.pricecharting_scraper import pricecharting_scraper
+                results = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        pricecharting_scraper.search_card, 
+                        card.name, 
+                        card.set_name,
+                        card.card_number  # Pass actual card number for accurate lookup
+                    ),
+                    timeout=15.0
+                )
+                if results and len(results) > 0:
+                    url = results[0].get("url")
+                    if url:
+                        prices = await asyncio.wait_for(
+                            asyncio.to_thread(pricecharting_scraper.get_card_prices, url),
+                            timeout=15.0
+                        )
+                        if prices and "ungraded" in prices:
+                            current_price = prices["ungraded"]
+                            logger.info(f"Got price from PriceCharting: ${current_price}")
+            except Exception as e:
+                logger.warning(f"PriceCharting fallback failed for {card.name}: {e}")
+        
+        # Save price if we got one
+        if current_price > 0:
+            if features:
+                features.current_price = current_price
+                db.commit()
+            else:
+                # Create features if missing
+                features_dict = feature_service.create_card_features(card, current_price, [])
+                new_features = CardFeature(card_id=card.id, **features_dict)
+                db.add(new_features)
+                db.commit()
+                features = new_features
+    
+    # Ensure price history exists for predictions using real PriceCharting data
+    existing_history = db.query(PriceHistory).filter(
+        PriceHistory.card_id == card.id
+    ).count()
+    if existing_history < 2:
+        try:
+            from app.services.pricecharting_scraper import pricecharting_scraper
+            search_results = await asyncio.to_thread(
+                pricecharting_scraper.search_card, card.name, card.set_name, card.card_number
+            )
+            if search_results:
+                best_match = None
+                for r in search_results:
+                    if not r.get("is_first_edition"):
+                        best_match = r
+                        break
+                if not best_match:
+                    best_match = search_results[0]
+                sales_by_grade = await asyncio.to_thread(
+                    pricecharting_scraper.get_sales_history, best_match["url"]
+                )
+                sales = sales_by_grade.get("Ungraded", [])
+                if not sales:
+                    for grade_sales in sales_by_grade.values():
+                        if grade_sales:
+                            sales = grade_sales
+                            break
+                if sales:
+                    import logging as _log
+                    _log.getLogger(__name__).info(
+                        f"Storing {len(sales)} PriceCharting data points for card {card.id}"
+                    )
+                    for sale in sales:
+                        try:
+                            sale_date = datetime.strptime(sale["date"], "%Y-%m-%d")
+                        except (ValueError, KeyError):
+                            continue
+                        db.add(PriceHistory(
+                            card_id=card.id,
+                            date=sale_date,
+                            price_loose=round(sale["price"], 2),
+                            volume=1,
+                            source="pricecharting_ebay"
+                        ))
+                    db.commit()
+        except Exception as e:
+            import logging as _log
+            _log.getLogger(__name__).warning(f"Failed to fetch PriceCharting history: {e}")
+    
     return {
         "id": card.id,
         "external_id": card.external_id,
@@ -160,7 +263,7 @@ async def get_card_detail(
         "image_url": card.image_url,
         "tcgplayer_url": card.tcgplayer_url or _build_tcgplayer_url(card.name, card.set_name),
         "ebay_url": card.ebay_url or _build_ebay_url(card.name, card.set_name),
-        "current_price": features.current_price if features else 0,
+        "current_price": current_price,
         "features": _format_features(features) if features else None,
     }
 
@@ -191,8 +294,9 @@ async def get_price_history(
     if search_name:
         try:
             # Search for card on PriceCharting
+            card_num = card.card_number if card else None
             search_results = await asyncio.to_thread(
-                pricecharting_scraper.search_card, search_name, search_set
+                pricecharting_scraper.search_card, search_name, search_set, card_num
             )
             
             if search_results:
@@ -379,8 +483,9 @@ async def get_all_grades_price_history(
         logger.info(f"Getting PriceCharting data for {name} ({s_name})")
         
         # Search for the card
+        card_num = card.card_number if card else None
         search_results = await asyncio.to_thread(
-            pricecharting_scraper.search_card, name, s_name
+            pricecharting_scraper.search_card, name, s_name, card_num
         )
         
         if search_results:
