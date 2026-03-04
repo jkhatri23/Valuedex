@@ -90,11 +90,6 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
                 <div className="flex-1">
                   <div className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{card.name}</div>
                   <div className="text-sm text-gray-500 dark:text-white/60 mt-0.5">{card.set_name}</div>
-                  {card.current_price > 0 && (
-                    <div className="text-sm font-bold text-gray-900 dark:text-white mt-1.5">
-                      ${card.current_price.toFixed(2)}
-                    </div>
-                  )}
                 </div>
               </div>
             </button>
