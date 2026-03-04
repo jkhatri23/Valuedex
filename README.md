@@ -9,7 +9,7 @@ A modern web application that predicts Pokemon card values using machine learnin
 
 ## 🌟 Features
 
-- 🔍 **Smart Card Search**: Search and select any English Pokemon card with autocomplete
+- 🔍 **Smart Card Search**: Search and select any English Pokemon card with autocomplete!
 - 📊 **Price Analytics**: View current stats, trends, and historical price data
 - 🤖 **ML Predictions**: Predict card values 1-5 years into the future using hybrid AI models
 - 💎 **Investment Rating**: Stock-style ratings (Strong Buy, Buy, Hold, Sell) with 1-10 scores
