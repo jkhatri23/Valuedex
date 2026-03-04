@@ -9,6 +9,7 @@ from app.price_database import price_engine, PriceBase
 from app.models.card import Card, CardFeature, PriceHistory
 from app.services.pokemon_tcg_sync import pokemon_tcg_sync
 from app.services.features import feature_service
+from app.services.card_index import card_index
 import logging
 import threading
 
@@ -96,7 +97,12 @@ def initial_populate_job():
         
         # Fix any cards missing features
         fix_missing_features()
-        
+
+        # Build in-memory search index
+        logger.info("Building card search index...")
+        card_index.build()
+        logger.info(f"Card search index ready: {card_index.size} cards indexed")
+
     except Exception as e:
         logger.error(f"Error during initial population check: {e}")
     finally:

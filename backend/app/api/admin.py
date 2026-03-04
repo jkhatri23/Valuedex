@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from typing import Dict, Optional
 
 from app.services.pokemon_tcg_sync import pokemon_tcg_sync
+from app.services.card_index import card_index
 
 router = APIRouter()
 
@@ -58,6 +59,17 @@ async def update_database(background_tasks: BackgroundTasks):
     )
 
 
+@router.post("/admin/rebuild-index", response_model=UpdateResponse)
+async def rebuild_index():
+    """Rebuild the in-memory card search index from the database."""
+    card_index.build()
+    return UpdateResponse(
+        success=True,
+        message=f"Index rebuilt with {card_index.size} cards.",
+        data={"indexed_cards": card_index.size}
+    )
+
+
 @router.get("/admin/sync-status")
 async def get_sync_status():
     """
@@ -82,8 +94,9 @@ async def get_sync_status():
         return {
             "success": True,
             "total_cards": total_cards,
+            "indexed_cards": card_index.size,
             "last_update": last_update,
-            "scheduler_running": True  # Scheduler is always running when app is up
+            "scheduler_running": True
         }
     finally:
         db.close()

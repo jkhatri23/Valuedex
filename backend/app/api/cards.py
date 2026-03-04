@@ -18,6 +18,7 @@ from app.price_database import get_price_db
 from app.services.ebay import ebay_price_service
 from app.services.pokemon_tcg import pokemon_tcg_service
 from app.services.features import feature_service
+from app.services.card_index import card_index
 
 router = APIRouter()
 
@@ -30,16 +31,22 @@ async def search_cards(
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = None
 ):
-    """Search for Pokemon cards - ALWAYS uses Pokemon TCG API for images."""
+    """Fast card search using the in-memory name index.
+    Falls back to Pokemon TCG API only when the index has no matches."""
     query = q.strip()
-    
-    # ALWAYS use Pokemon TCG API for search (best images)
+
+    # 1. Try the in-memory index first (sub-millisecond)
+    indexed = card_index.search(query, limit)
+    if indexed:
+        return {"cards": indexed, "count": len(indexed), "source": "index"}
+
+    # 2. Fall back to Pokemon TCG API when the index has no matches
     try:
         tcg_results = await asyncio.wait_for(
             asyncio.to_thread(pokemon_tcg_service.search_cards, query, limit),
             timeout=20.0
         )
-        
+
         if tcg_results:
             cards = [{
                 "id": r.get("id"),
@@ -51,10 +58,10 @@ async def search_cards(
                 "artist": r.get("artist"),
                 "card_number": r.get("card_number"),
             } for r in tcg_results]
-            
+
             if background_tasks:
-                background_tasks.add_task(_save_pokemon_tcg_cards, tcg_results)
-            
+                background_tasks.add_task(_save_and_reindex, tcg_results)
+
             return {"cards": cards, "count": len(cards), "source": "pokemon_tcg"}
     except asyncio.TimeoutError:
         import logging
@@ -62,15 +69,15 @@ async def search_cards(
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f"Pokemon TCG search failed: {e}")
-    
-    # Fall back to database
+
+    # 3. Final fallback: direct database query
     db_cards = db.query(Card).filter(
         or_(
             Card.name.ilike(f"%{query}%"),
             Card.set_name.ilike(f"%{query}%")
         )
     ).limit(limit).all()
-    
+
     cards = []
     for card in db_cards:
         price = 0
@@ -84,7 +91,7 @@ async def search_cards(
             "image_url": card.image_url,
             "rarity": card.rarity,
         })
-    
+
     return {"cards": cards, "count": len(cards), "source": "database"}
 
 
@@ -764,6 +771,12 @@ def _generate_price_history(db: Session, card_id: int, current_price: float):
             source="estimate"
         ))
     db.commit()
+
+
+def _save_and_reindex(results: List[Dict]):
+    """Save Pokemon TCG API results then rebuild the index."""
+    _save_pokemon_tcg_cards(results)
+    card_index.build()
 
 
 def _save_pokemon_tcg_cards(results: List[Dict]):
