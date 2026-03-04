@@ -2,6 +2,8 @@
 Pokemon TCG API Database Sync Service
 Populates and updates PostgreSQL database with cards from pokemontcg.io
 """
+import json
+import subprocess
 import requests
 import time
 from typing import List, Dict, Optional
@@ -33,7 +35,23 @@ class PokemonTCGSync:
         if self.api_key:
             self.headers["X-Api-Key"] = self.api_key
     
-    def fetch_all_cards(self, page_size: int = 50, max_cards: Optional[int] = None) -> List[Dict]:
+    def _fetch_page_curl(self, page: int, page_size: int) -> Optional[Dict]:
+        """Fetch a single page using curl (more reliable than requests for this API)."""
+        url = f"{self.BASE_URL}/cards?page={page}&pageSize={page_size}"
+        cmd = ["curl", "-s", "--max-time", "120", url]
+        if self.api_key:
+            cmd.extend(["-H", f"X-Api-Key: {self.api_key}"])
+        
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=130)
+            if result.returncode != 0:
+                return None
+            return json.loads(result.stdout)
+        except (subprocess.TimeoutExpired, json.JSONDecodeError, Exception) as e:
+            print(f"[SYNC] curl error for page {page}: {e}")
+            return None
+
+    def fetch_all_cards(self, page_size: int = 250, max_cards: Optional[int] = None) -> List[Dict]:
         """
         Fetch all cards from Pokemon TCG API using pagination.
         Returns a list of all cards.
@@ -42,65 +60,45 @@ class PokemonTCGSync:
         page = 1
         
         print(f"[SYNC] Starting to fetch all cards from Pokemon TCG API...")
+        if max_cards:
+            print(f"[SYNC] Target: {max_cards} cards")
         
-        MAX_RETRIES = 3
-        RETRY_DELAY = 5  # seconds
+        MAX_RETRIES = 5
+        RETRY_DELAY = 3
 
         while True:
-            try:
-                url = f"{self.BASE_URL}/cards"
-                params = {
-                    "page": page,
-                    "pageSize": page_size
-                }
-                
-                print(f"[SYNC] Fetching page {page}...")
-                attempts = 0
-                while attempts < MAX_RETRIES:
-                    try:
-                        response = requests.get(
-                            url,
-                            params=params,
-                            headers=self.headers,
-                            timeout=60,
-                        )
-                        response.raise_for_status()
-                        break
-                    except requests.exceptions.RequestException as e:
-                        attempts += 1
-                        print(f"[SYNC] Error fetching page {page} (attempt {attempts}/{MAX_RETRIES}): {e}")
-                        if attempts >= MAX_RETRIES:
-                            print(f"[SYNC] Reached max retries for page {page}. Stopping fetch.")
-                            return all_cards
-                        time.sleep(RETRY_DELAY * attempts)
-                
-                data = response.json()
-                cards = data.get("data", [])
-                
-                if not cards:
+            print(f"[SYNC] Fetching page {page} (pageSize={page_size})...")
+            data = None
+            for attempt in range(1, MAX_RETRIES + 1):
+                data = self._fetch_page_curl(page, page_size)
+                if data and "data" in data:
                     break
-                
-                all_cards.extend(cards)
-                if max_cards and len(all_cards) >= max_cards:
-                    all_cards = all_cards[:max_cards]
-                    break
-                print(f"[SYNC] Fetched {len(cards)} cards from page {page}. Total: {len(all_cards)}")
-                
-                # Check if there are more pages
-                total_count = data.get("totalCount", 0)
-                if len(all_cards) >= total_count:
-                    break
-                
-                page += 1
-                
-                # Rate limiting - be nice to the API
-                time.sleep(0.5)  # 500ms delay between requests
-                
-            except requests.exceptions.RequestException as e:
-                print(f"[SYNC] Error fetching page {page}: {e}")
+                print(f"[SYNC] Attempt {attempt}/{MAX_RETRIES} failed for page {page}")
+                if attempt < MAX_RETRIES:
+                    time.sleep(RETRY_DELAY * attempt)
+            
+            if not data or "data" not in data:
+                print(f"[SYNC] Could not fetch page {page} after {MAX_RETRIES} attempts. Stopping.")
                 break
+
+            cards = data["data"]
+            if not cards:
+                break
+            
+            all_cards.extend(cards)
+            if max_cards and len(all_cards) >= max_cards:
+                all_cards = all_cards[:max_cards]
+                break
+            print(f"[SYNC] Fetched {len(cards)} cards from page {page}. Total: {len(all_cards)}")
+            
+            total_count = data.get("totalCount", 0)
+            if len(all_cards) >= total_count:
+                break
+            
+            page += 1
+            time.sleep(1)
         
-        print(f"[SYNC] ✅ Finished fetching. Total cards: {len(all_cards)}")
+        print(f"[SYNC] Finished fetching. Total cards: {len(all_cards)}")
         return all_cards
     
     def extract_price(self, card: Dict) -> float:
@@ -314,7 +312,7 @@ class PokemonTCGSync:
             db.rollback()
             return None
     
-    def populate_database(self, batch_size: int = 100, max_cards: int = 1000) -> Dict:
+    def populate_database(self, batch_size: int = 100, max_cards: int = 5000) -> Dict:
         """
         Populate the database with all cards from Pokemon TCG API.
         This is the initial population - can take a while!
@@ -390,7 +388,7 @@ class PokemonTCGSync:
             db.close()
             price_db.close()
     
-    def update_database(self, batch_size: int = 100, max_cards: int = 1000) -> Dict:
+    def update_database(self, batch_size: int = 100, max_cards: int = 5000) -> Dict:
         """
         Update the database with latest card information and prices.
         This is the daily update job - faster than full population.
