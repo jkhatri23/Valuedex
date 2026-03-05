@@ -137,12 +137,4 @@ class CardIndex:
 
         return results[:limit]
 
-    def get_name_map(self) -> Dict[str, List[str]]:
-        """Return the name -> [card IDs] map (useful for debugging)."""
-        return {
-            name: [c["id"] for c in cards]
-            for name, cards in self._name_to_cards.items()
-        }
-
-
 card_index = CardIndex()

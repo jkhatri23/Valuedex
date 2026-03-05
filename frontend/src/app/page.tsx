@@ -9,7 +9,7 @@ import PredictionPanel from '@/components/PredictionPanel'
 import InvestmentRating from '@/components/InvestmentRating'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useScrollAnimation } from '@/hooks/useScrollAnimation'
-import { TrendingUp, Search, Brain, Database, LineChart, Target, Sparkles } from 'lucide-react'
+import { Brain, Database, LineChart, Target } from 'lucide-react'
 
 export default function Home() {
   const [selectedCard, setSelectedCard] = useState<any>(null)
@@ -18,7 +18,6 @@ export default function Home() {
   const [featuredCards, setFeaturedCards] = useState<any[]>([])
   
   // Scroll animation hooks for different sections
-  const statsAnimation = useScrollAnimation({ threshold: 0.2 })
   const featuresAnimation = useScrollAnimation({ threshold: 0.15 })
   const techStackAnimation = useScrollAnimation({ threshold: 0.2 })
   const footerAnimation = useScrollAnimation({ threshold: 0.3 })
@@ -328,9 +327,7 @@ export default function Home() {
                 />
                 {cardDetails && cardDetails.features && (
                   <InvestmentRating 
-                    cardId={selectedCard.id}
                     features={cardDetails.features}
-                    prediction={latestPrediction}
                   />
                 )}
               </div>

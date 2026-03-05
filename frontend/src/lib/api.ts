@@ -156,15 +156,6 @@ export async function getPrediction(cardId: string, yearsAhead: number = 3, card
   }
 }
 
-export async function getInvestmentRating(cardId: string) {
-  try {
-    const { data } = await api.get(`/api/cards/${cardId}/rating`)
-    return data
-  } catch {
-    return null
-  }
-}
-
 export interface GradeAnalysis {
   grade: string
   current_price: number
@@ -219,4 +210,3 @@ export async function getAllGradesHistory(
   }
 }
 
-export default api

@@ -1078,32 +1078,6 @@ class EbayPriceService:
         
         return result
 
-    def search_cards_with_grades(self, query: str, limit: int = 20) -> List[Dict]:
-        """
-        Search for cards and include grade-specific pricing information.
-        """
-        if not self.enabled:
-            return []
-
-        # First get base card list
-        cards = self.search_cards(query, limit)
-        
-        # For each card, try to get grade-specific pricing
-        for card in cards:
-            card_name = card.get("name") or card.get("product-name")
-            set_name = card.get("set_name") or card.get("console-name")
-            
-            # Get prices by grade (limited search)
-            search_query = f"{card_name} {set_name or ''} pokemon card PSA".strip()
-            graded_items = self._search_browse_api(search_query, limit=30)
-            
-            if graded_items:
-                prices_by_grade = self._get_prices_by_grade(graded_items, card_name, set_name)
-                card['prices_by_grade'] = prices_by_grade
-
-        return cards
-
-
 ebay_price_service = EbayPriceService()
 
 

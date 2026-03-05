@@ -705,9 +705,3 @@ class PriceChartingScraper:
 # Singleton
 pricecharting_scraper = PriceChartingScraper()
 
-
-def get_historical_prices(card_name: str, set_name: str = None) -> List[Dict]:
-    """Convenience function to get just the price history."""
-    data = pricecharting_scraper.get_card_history(card_name, set_name)
-    return data.get("history", [])
-
