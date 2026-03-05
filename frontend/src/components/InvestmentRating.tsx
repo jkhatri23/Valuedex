@@ -1,9 +1,7 @@
 'use client'
 
-import { Award, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 interface InvestmentRatingProps {
-  cardId: string
   features: {
     investment_score: number
     investment_rating: string
@@ -16,30 +14,9 @@ interface InvestmentRatingProps {
     volatility: number
     market_sentiment?: number
   } | null
-  prediction?: {
-    recommendation: string
-    risk_assessment: {
-      risk_level: string
-      reward_risk_ratio: number
-      volatility: number
-      upside_potential_pct: number
-      downside_risk_pct: number
-    }
-    scenarios: {
-      conservative: number
-      moderate: number
-      aggressive: number
-    }
-    growth_rate: number
-    market_factors: {
-      sentiment_multiplier: number
-      popularity_score: number
-      current_trend: number
-    }
-  } | null
 }
 
-export default function InvestmentRating({ features, prediction }: InvestmentRatingProps) {
+export default function InvestmentRating({ features }: InvestmentRatingProps) {
   // Handle null/undefined features
   if (!features) {
     return (
@@ -54,78 +31,6 @@ export default function InvestmentRating({ features, prediction }: InvestmentRat
     )
   }
   
-  // Generate AI-powered explanation using prediction data
-  const getAIExplanation = () => {
-    if (!prediction) {
-      // Fallback to feature-based explanations
-      if (features.investment_rating === 'Strong Buy') 
-        return 'This card shows exceptional growth potential with strong fundamentals across multiple factors.'
-      if (features.investment_rating === 'Buy') 
-        return 'This card demonstrates good investment potential with positive market trends.'
-      if (features.investment_rating === 'Hold') 
-        return 'This card is fairly valued at current prices. Consider holding or monitoring closely.'
-      if (features.investment_rating === 'Underperform') 
-        return 'This card may underperform the market. Exercise caution when investing.'
-      return 'This card shows weak fundamentals and may decline in value. Consider selling.'
-    }
-    
-    const { recommendation, risk_assessment, growth_rate, market_factors } = prediction
-    const riskLevel = risk_assessment.risk_level
-    const rewardRisk = risk_assessment.reward_risk_ratio
-    const upside = risk_assessment.upside_potential_pct
-    const downside = Math.abs(risk_assessment.downside_risk_pct)
-    
-    // AI-generated explanation based on prediction model
-    let explanation = ''
-    
-    if (recommendation === 'strong_buy') {
-      explanation = `Exceptional investment opportunity with a ${rewardRisk.toFixed(1)}x reward-risk ratio. `
-      explanation += `Upside potential of +${upside.toFixed(0)}% significantly outweighs the ${downside.toFixed(0)}% downside risk. `
-      explanation += `${riskLevel === 'low' ? 'Low risk profile makes this ideal for conservative portfolios.' : ''}`
-    } else if (recommendation === 'buy') {
-      explanation = `Strong buy signal with ${growth_rate.toFixed(1)}% expected growth. `
-      explanation += `Reward-risk ratio of ${rewardRisk.toFixed(1)}x indicates good potential. `
-      explanation += `Market sentiment (${market_factors.sentiment_multiplier.toFixed(2)}x) supports upward momentum.`
-    } else if (recommendation === 'hold') {
-      explanation = `Balanced risk-reward profile (${rewardRisk.toFixed(1)}x ratio). `
-      explanation += `Current valuation is fair with ${Math.abs(growth_rate).toFixed(1)}% expected movement. `
-      explanation += `${riskLevel === 'high' ? 'High volatility suggests monitoring closely before additional investment.' : 'Suitable for patient investors.'}`
-    } else if (recommendation === 'consider_selling') {
-      explanation = `Risk outweighs reward with only ${rewardRisk.toFixed(1)}x ratio. `
-      explanation += `Downside risk of ${downside.toFixed(0)}% is concerning given ${upside.toFixed(0)}% upside. `
-      explanation += `Consider reducing position or setting stop-loss orders.`
-    } else {
-      explanation = `Poor investment profile with ${downside.toFixed(0)}% downside risk. `
-      explanation += `Reward-risk ratio of ${rewardRisk.toFixed(1)}x indicates unfavorable conditions. `
-      explanation += `Market trends suggest considering exit strategy.`
-    }
-    
-    return explanation
-  }
-
-  const getRatingColor = (rating: string) => {
-    switch (rating) {
-      case 'Strong Buy':
-        return 'from-green-500 to-green-600'
-      case 'Buy':
-        return 'from-blue-500 to-blue-600'
-      case 'Hold':
-        return 'from-yellow-500 to-yellow-600'
-      case 'Underperform':
-        return 'from-orange-500 to-orange-600'
-      case 'Sell':
-        return 'from-red-500 to-red-600'
-      default:
-        return 'from-gray-500 to-gray-600'
-    }
-  }
-
-  const getRatingIcon = (rating: string) => {
-    if (rating.includes('Buy')) return <TrendingUp className="w-6 h-6" />
-    if (rating === 'Sell') return <TrendingDown className="w-6 h-6" />
-    return <Minus className="w-6 h-6" />
-  }
-
   const getScoreColor = (_score: number) => {
     return 'text-gray-900 dark:text-white'
   }

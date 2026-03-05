@@ -7,9 +7,10 @@ import CardDisplay from '@/components/CardDisplay'
 import PriceChart from '@/components/PriceChart'
 import PredictionPanel from '@/components/PredictionPanel'
 import InvestmentRating from '@/components/InvestmentRating'
+import ComparePanel from '@/components/ComparePanel'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useScrollAnimation } from '@/hooks/useScrollAnimation'
-import { TrendingUp, Search, Brain, Database, LineChart, Target, Sparkles } from 'lucide-react'
+import { Brain, Database, LineChart, Target } from 'lucide-react'
 
 export default function Home() {
   const [selectedCard, setSelectedCard] = useState<any>(null)
@@ -18,7 +19,6 @@ export default function Home() {
   const [featuredCards, setFeaturedCards] = useState<any[]>([])
   
   // Scroll animation hooks for different sections
-  const statsAnimation = useScrollAnimation({ threshold: 0.2 })
   const featuresAnimation = useScrollAnimation({ threshold: 0.15 })
   const techStackAnimation = useScrollAnimation({ threshold: 0.2 })
   const footerAnimation = useScrollAnimation({ threshold: 0.3 })
@@ -319,41 +319,67 @@ export default function Home() {
           
           <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl p-8 border border-black/[0.03] dark:border-white/[0.03]">
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left Column - Card Info */}
-              <div className="lg:col-span-1 space-y-6">
-                <CardDisplay 
-                  card={selectedCard} 
-                  onDetailsLoaded={setCardDetails}
-                />
-                {cardDetails && cardDetails.features && (
-                  <InvestmentRating 
-                    cardId={selectedCard.id}
-                    features={cardDetails.features}
-                    prediction={latestPrediction}
+            {/* Row 1: Card Info + Price Chart side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+              <div className="lg:col-span-1 flex">
+                <div className="w-full">
+                  <CardDisplay 
+                    card={selectedCard} 
+                    onDetailsLoaded={setCardDetails}
                   />
-                )}
+                </div>
               </div>
 
-              {/* Right Column - Charts and Predictions */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 flex">
                 {cardDetails && (
-                  <>
+                  <div className="w-full [&>.card]:h-full">
                     <PriceChart 
                       cardId={selectedCard.id} 
                       cardName={selectedCard.name}
                       setName={selectedCard.set_name}
                     />
-                    <PredictionPanel 
-                      cardId={selectedCard.id}
-                      cardName={selectedCard.name}
-                      currentPrice={cardDetails.current_price}
-                      onPredictionGenerated={setLatestPrediction}
-                    />
-                  </>
+                  </div>
                 )}
               </div>
             </div>
+
+            {/* Row 2: Key Factors (full width) */}
+            {cardDetails && cardDetails.features && (
+              <div className="mt-8">
+                <InvestmentRating 
+                  features={cardDetails.features}
+                />
+              </div>
+            )}
+
+            {/* Row 3: Future Price Prediction (full width) */}
+            {cardDetails && (
+              <div className="mt-8">
+                <PredictionPanel 
+                  cardId={selectedCard.id}
+                  cardName={selectedCard.name}
+                  currentPrice={cardDetails.current_price}
+                  onPredictionGenerated={setLatestPrediction}
+                />
+              </div>
+            )}
+
+            {/* Compare Panel */}
+            {cardDetails && (
+              <div className="mt-8">
+                <ComparePanel
+                  primaryCard={{
+                    id: selectedCard.id,
+                    name: cardDetails.name || selectedCard.name,
+                    set_name: cardDetails.set_name || selectedCard.set_name,
+                    image_url: cardDetails.image_url || selectedCard.image_url,
+                    current_price: cardDetails.current_price,
+                    features: cardDetails.features,
+                  }}
+                  primaryPrediction={latestPrediction}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

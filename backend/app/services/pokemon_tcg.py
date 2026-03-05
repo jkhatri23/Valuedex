@@ -103,55 +103,6 @@ class PokemonTCGService:
             logger.warning(f"Pokemon TCG API get card error: {e}")
             return None
     
-    def search_card_for_image(self, card_name: str, set_name: Optional[str] = None) -> Optional[str]:
-        """
-        Search for a card and return its image URL.
-        Useful for getting images when we only have name/set from eBay.
-        """
-        cache_key = f"image_{card_name}_{set_name}"
-        cached = self._get_cached(cache_key)
-        if cached is not None:
-            return cached
-        
-        try:
-            # Build search query
-            query_parts = [f"name:\"{card_name}\""]
-            if set_name:
-                # Try to match set name
-                query_parts.append(f"set.name:\"{set_name}\"")
-            
-            params = {
-                "q": " ".join(query_parts),
-                "pageSize": 1
-            }
-            
-            response = requests.get(
-                f"{self.BASE_URL}/cards",
-                params=params,
-                headers=self.headers,
-                timeout=3  # Very short timeout for image lookup
-            )
-            response.raise_for_status()
-            data = response.json()
-            cards = data.get("data", [])
-            
-            if cards:
-                images = cards[0].get("images", {})
-                image_url = images.get("large") or images.get("small")
-                if image_url:
-                    self._set_cached(cache_key, image_url)
-                    return image_url
-            
-            # Try without set name if no results
-            if set_name:
-                return self.search_card_for_image(card_name, None)
-            
-            return None
-            
-        except Exception as e:
-            logger.warning(f"Pokemon TCG API image search timeout/error: {e}")
-            return None
-    
     def _format_card(self, card: Dict) -> Dict:
         """Format card data from Pokemon TCG API."""
         images = card.get("images", {})
