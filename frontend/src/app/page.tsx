@@ -319,39 +319,50 @@ export default function Home() {
           
           <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl p-8 border border-black/[0.03] dark:border-white/[0.03]">
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left Column - Card Info */}
-              <div className="lg:col-span-1 space-y-6">
-                <CardDisplay 
-                  card={selectedCard} 
-                  onDetailsLoaded={setCardDetails}
-                />
-                {cardDetails && cardDetails.features && (
-                  <InvestmentRating 
-                    features={cardDetails.features}
+            {/* Row 1: Card Info + Price Chart side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+              <div className="lg:col-span-1 flex">
+                <div className="w-full">
+                  <CardDisplay 
+                    card={selectedCard} 
+                    onDetailsLoaded={setCardDetails}
                   />
-                )}
+                </div>
               </div>
 
-              {/* Right Column - Charts and Predictions */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 flex">
                 {cardDetails && (
-                  <>
+                  <div className="w-full [&>.card]:h-full">
                     <PriceChart 
                       cardId={selectedCard.id} 
                       cardName={selectedCard.name}
                       setName={selectedCard.set_name}
                     />
-                    <PredictionPanel 
-                      cardId={selectedCard.id}
-                      cardName={selectedCard.name}
-                      currentPrice={cardDetails.current_price}
-                      onPredictionGenerated={setLatestPrediction}
-                    />
-                  </>
+                  </div>
                 )}
               </div>
             </div>
+
+            {/* Row 2: Key Factors (full width) */}
+            {cardDetails && cardDetails.features && (
+              <div className="mt-8">
+                <InvestmentRating 
+                  features={cardDetails.features}
+                />
+              </div>
+            )}
+
+            {/* Row 3: Future Price Prediction (full width) */}
+            {cardDetails && (
+              <div className="mt-8">
+                <PredictionPanel 
+                  cardId={selectedCard.id}
+                  cardName={selectedCard.name}
+                  currentPrice={cardDetails.current_price}
+                  onPredictionGenerated={setLatestPrediction}
+                />
+              </div>
+            )}
 
             {/* Compare Panel */}
             {cardDetails && (

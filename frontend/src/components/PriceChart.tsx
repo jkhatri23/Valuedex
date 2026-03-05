@@ -317,7 +317,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
   const priceChangePercent = firstPrice > 0 ? (priceChange / firstPrice) * 100 : 0
 
   return (
-    <div className="card">
+    <div className="card flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           {priceChange >= 0 ? (
@@ -376,7 +376,8 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
+      <div className="flex-1 min-h-[300px]">
+      <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis 
@@ -428,6 +429,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
           />
         </LineChart>
       </ResponsiveContainer>
+      </div>
 
       <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
         <div className="grid grid-cols-3 gap-4 text-center">
