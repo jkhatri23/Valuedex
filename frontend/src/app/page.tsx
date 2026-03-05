@@ -7,6 +7,7 @@ import CardDisplay from '@/components/CardDisplay'
 import PriceChart from '@/components/PriceChart'
 import PredictionPanel from '@/components/PredictionPanel'
 import InvestmentRating from '@/components/InvestmentRating'
+import ComparePanel from '@/components/ComparePanel'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useScrollAnimation } from '@/hooks/useScrollAnimation'
 import { Brain, Database, LineChart, Target } from 'lucide-react'
@@ -351,6 +352,23 @@ export default function Home() {
                 )}
               </div>
             </div>
+
+            {/* Compare Panel */}
+            {cardDetails && (
+              <div className="mt-8">
+                <ComparePanel
+                  primaryCard={{
+                    id: selectedCard.id,
+                    name: cardDetails.name || selectedCard.name,
+                    set_name: cardDetails.set_name || selectedCard.set_name,
+                    image_url: cardDetails.image_url || selectedCard.image_url,
+                    current_price: cardDetails.current_price,
+                    features: cardDetails.features,
+                  }}
+                  primaryPrediction={latestPrediction}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
