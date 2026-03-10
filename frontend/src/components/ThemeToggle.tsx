@@ -7,32 +7,14 @@ export default function ThemeToggle() {
   const { theme, setTheme } = useTheme()
 
   return (
-    <div className="inline-flex rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
-      <button
-        type="button"
-        aria-label="Switch to light mode"
-        onClick={() => setTheme('light')}
-        className={`px-3 py-2 transition-colors ${
-          theme === 'light'
-            ? 'bg-gray-100 text-amber-500 dark:bg-white/20'
-            : 'text-gray-500 dark:text-white/60'
-        } rounded-l-lg`}
-      >
-        <Sun className="w-4 h-4" />
-      </button>
-      <button
-        type="button"
-        aria-label="Switch to dark mode"
-        onClick={() => setTheme('dark')}
-        className={`px-3 py-2 transition-colors ${
-          theme === 'dark'
-            ? 'bg-gray-900 text-yellow-300 dark:bg-white/20 dark:text-white'
-            : 'text-gray-500 dark:text-white/60'
-        } rounded-r-lg`}
-      >
-        <Moon className="w-4 h-4" />
-      </button>
-    </div>
+    <button
+      type="button"
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 transition-colors"
+    >
+      {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+    </button>
   )
 }
 
