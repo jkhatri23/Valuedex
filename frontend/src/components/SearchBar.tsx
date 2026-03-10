@@ -54,11 +54,11 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
   return (
     <div ref={wrapperRef} className="relative">
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
           {isLoading ? (
-            <Loader2 className="w-6 h-6 text-gray-500 animate-spin" />
+            <Loader2 className="w-5 h-5 text-gray-500 animate-spin" />
           ) : (
-            <Search className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+            <Search className="w-5 h-5 text-gray-400 dark:text-gray-500" />
           )}
         </div>
         <input
@@ -66,7 +66,7 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search for any Pokémon card..."
-          className="w-full pl-14 pr-6 py-5 text-lg border-2 border-gray-200 dark:border-white/10 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder:text-gray-400 bg-white dark:bg-[#1a1a1a] dark:text-white dark:placeholder:text-gray-500 shadow-sm hover:shadow-md"
+          className="w-full pl-12 pr-5 py-3 text-base border-2 border-gray-200 dark:border-white/10 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder:text-gray-400 bg-white dark:bg-[#1a1a1a] dark:text-white dark:placeholder:text-gray-500 shadow-sm hover:shadow-md"
         />
       </div>
 
