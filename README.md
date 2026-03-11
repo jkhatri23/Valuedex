@@ -1,4 +1,4 @@
-# Pokedict
+# Valuedex
 
 A Pokemon card value predictor that uses historical market data and ML to forecast card prices.
 
