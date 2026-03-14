@@ -25,8 +25,11 @@ const themeInitScript = `
 `
 
 export const metadata: Metadata = {
-  title: 'Pokedictor - Pokemon Card Value Predictor',
+  title: 'Valuedex',
   description: 'Predict Pokemon card values using machine learning and historical market data',
+  icons: {
+    icon: '/logo.png',
+  },
 }
 
 export default function RootLayout({
