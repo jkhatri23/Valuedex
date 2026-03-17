@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { searchCards, Card } from '@/lib/api'
+import { searchCards, getCardDetails, Card } from '@/lib/api'
 import { Search, Loader2, ArrowLeft } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -25,9 +25,21 @@ function SearchResults() {
     if (!q) return
     setIsLoading(true)
     setHasSearched(true)
-    searchCards(q).then((data) => {
+    searchCards(q).then(async (data) => {
       setResults(data)
       setIsLoading(false)
+
+      const enriched = await Promise.all(
+        data.map(async (card) => {
+          if (card.current_price > 0) return card
+          const details = await getCardDetails(card.id)
+          if (details && details.current_price > 0) {
+            return { ...card, current_price: details.current_price }
+          }
+          return card
+        })
+      )
+      setResults(enriched)
     })
   }, [q])
 
@@ -39,7 +51,7 @@ function SearchResults() {
   }
 
   const handleCardClick = (card: Card) => {
-    router.push(`/?cardId=${card.id}`)
+    router.push(`/card/${card.id}`)
   }
 
   return (
@@ -154,6 +166,20 @@ function SearchResults() {
           </div>
         )}
       </div>
+
+      <footer className="bg-white/50 dark:bg-[#0a0a0a]/50 backdrop-blur-sm border-t border-gray-200 dark:border-white/10 mt-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center">
+            <p className="text-gray-600 dark:text-white/70 mb-3 font-light">
+              Data powered by eBay API &amp; Pokemon TCG API &bull; Predictions by Advanced ML Models
+            </p>
+            <p className="text-sm text-gray-500 dark:text-white/50 font-light max-w-3xl mx-auto">
+              For entertainment and educational purposes only. Not financial advice.
+              This site is not affiliated with, endorsed, or sponsored by The Pok&eacute;mon Company International, Nintendo, or Game Freak.
+            </p>
+          </div>
+        </div>
+      </footer>
     </main>
   )
 }
