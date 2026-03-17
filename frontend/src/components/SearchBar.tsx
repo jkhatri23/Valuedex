@@ -16,15 +16,19 @@ export default function SearchBar({ onSelectCard, onSearch }: SearchBarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking/tapping outside
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
   }, [])
 
   // Debounced search
@@ -81,7 +85,7 @@ export default function SearchBar({ onSelectCard, onSearch }: SearchBarProps) {
 
       {/* Results Dropdown */}
       {isOpen && results.length > 0 && (
-        <div className="absolute w-full mt-3 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md rounded-md shadow-2xl border border-gray-200 dark:border-white/10 max-h-[28rem] overflow-y-auto z-50">
+        <div className="absolute w-full mt-3 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md rounded-md shadow-2xl border border-gray-200 dark:border-white/10 max-h-[70vh] overflow-y-auto z-50">
           {results.map((card) => (
             <button
               key={card.id}

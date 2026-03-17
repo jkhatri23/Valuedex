@@ -37,7 +37,7 @@ h1, h2, h3, h4, h5, h6 {
 
 @layer components {
   .card {
-    @apply bg-black/[0.03] dark:bg-white/[0.03] text-gray-900 dark:text-white rounded-xl border border-black/[0.025] dark:border-white/[0.025] p-6 transition-all duration-300;
+    @apply bg-black/[0.03] dark:bg-white/[0.03] text-gray-900 dark:text-white rounded-xl border border-black/[0.025] dark:border-white/[0.025] p-4 sm:p-6 transition-all duration-300;
   }
 
   .btn-primary {
@@ -45,7 +45,7 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .btn-secondary {
-    @apply bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white font-medium py-2 px-4 rounded-md hover:bg-gray-200 dark:hover:bg-white/20 transition-all duration-200;
+    @apply bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white font-medium py-2.5 px-4 rounded-md hover:bg-gray-200 dark:hover:bg-white/20 transition-all duration-200;
   }
 
   .glass-effect {

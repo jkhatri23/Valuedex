@@ -76,7 +76,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
 
   if (isLoading) {
     return (
-      <div className="card flex items-center justify-center h-96">
+      <div className="card flex items-center justify-center h-64 sm:h-96">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     )
@@ -86,27 +86,27 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
   if (viewMode === 'all' && allGradesData) {
     return (
       <div className="card">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div className="flex items-center space-x-3">
-            <BarChart3 className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            <BarChart3 className="w-6 h-6 text-gray-600 dark:text-gray-400 shrink-0" />
             <div>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                 All PSA Grades Analysis
               </h3>
               <p className="text-xs text-gray-500 dark:text-white/60">
-                12-month price history for all grades • eBay data
+                12-month price history for all grades
               </p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setViewMode('single')}
-              className="text-sm px-3 py-1.5 rounded-lg border border-gray-200/50 bg-white/50 dark:bg-white/5 dark:border-white/10 dark:text-white hover:bg-gray-50 dark:hover:bg-white/10"
+              className="text-sm px-3 py-2 rounded-lg border border-gray-200/50 bg-white/50 dark:bg-white/5 dark:border-white/10 dark:text-white hover:bg-gray-50 dark:hover:bg-white/10 min-h-[44px]"
             >
               Single Grade
             </button>
             <button
-              className="text-sm px-3 py-1.5 rounded-lg bg-gray-700 dark:bg-gray-600 text-white"
+              className="text-sm px-3 py-2 rounded-lg bg-gray-700 dark:bg-gray-600 text-white min-h-[44px]"
             >
               All Grades
             </button>
@@ -120,7 +120,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
               <Award className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               <span className="font-semibold text-gray-900 dark:text-white">Investment Recommendations</span>
             </div>
-            <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
               <div>
                 <span className="text-gray-500 dark:text-white/60">Best Value:</span>
                 <span className="ml-2 font-semibold text-gray-900 dark:text-white">
@@ -180,7 +180,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
                 ({allGradesData.pricecharting_comparison.product_name})
               </span>
             </div>
-            <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
               <div>
                 <span className="text-gray-500 dark:text-white/60">Loose (Raw):</span>
                 <span className="ml-2 font-semibold text-gray-900 dark:text-white">
@@ -318,15 +318,15 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
 
   return (
     <div className="card flex flex-col">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div className="flex items-center space-x-3">
           {priceChange >= 0 ? (
-            <TrendingUp className="w-6 h-6 text-gray-900 dark:text-white" />
+            <TrendingUp className="w-6 h-6 text-gray-900 dark:text-white shrink-0" />
           ) : (
-            <TrendingDown className="w-6 h-6 text-gray-900 dark:text-white" />
+            <TrendingDown className="w-6 h-6 text-gray-900 dark:text-white shrink-0" />
           )}
           <div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               Price History
             </h3>
             <p className="text-xs text-gray-500 dark:text-white/60">
@@ -338,7 +338,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             </p>
           </div>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3 sm:space-x-4">
           <div className="hidden sm:block text-right">
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {priceChange >= 0 ? '+' : ''}
@@ -355,7 +355,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
               onChange={(e) =>
                 setCondition(e.target.value as CardCondition)
               }
-              className="text-sm px-3 py-1.5 rounded-lg border border-gray-200/50 bg-white/50 dark:bg-white/5 dark:border-white/10 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+              className="text-sm px-3 py-2 rounded-lg border border-gray-200/50 bg-white/50 dark:bg-white/5 dark:border-white/10 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 min-h-[44px]"
             >
               <option value="Ungraded">Ungraded</option>
               <option value="PSA 6">PSA 6</option>
@@ -367,7 +367,7 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
             {cardName && (
               <button
                 onClick={() => setViewMode('all')}
-                className="text-sm px-3 py-1.5 rounded-lg bg-gray-700 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-500"
+                className="text-sm px-3 py-2 rounded-lg bg-gray-700 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-500 min-h-[44px]"
               >
                 All Grades
               </button>
@@ -432,29 +432,29 @@ export default function PriceChart({ cardId, cardName, setName }: PriceChartProp
       </div>
 
       <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
           <div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
               ${firstPrice.toFixed(2)}
             </div>
-            <div className="text-sm text-gray-600 dark:text-white/70 mt-1">
+            <div className="text-xs sm:text-sm text-gray-600 dark:text-white/70 mt-1">
               12 Months Ago
             </div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
               ${lastPrice.toFixed(2)}
             </div>
-            <div className="text-sm text-gray-600 dark:text-white/70 mt-1">
+            <div className="text-xs sm:text-sm text-gray-600 dark:text-white/70 mt-1">
               Current Price
             </div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
               {priceChange >= 0 ? '+' : ''}
               ${Math.abs(priceChange).toFixed(2)}
             </div>
-            <div className="text-sm text-gray-600 dark:text-white/70 mt-1">
+            <div className="text-xs sm:text-sm text-gray-600 dark:text-white/70 mt-1">
               Change
             </div>
           </div>
