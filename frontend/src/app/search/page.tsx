@@ -14,6 +14,8 @@ function SearchResults() {
 
   const [query, setQuery] = useState(q)
   const [results, setResults] = useState<Card[]>([])
+  const [prices, setPrices] = useState<Record<string, number>>({})
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
 
@@ -23,25 +25,34 @@ function SearchResults() {
 
   useEffect(() => {
     if (!q) return
+    let cancelled = false
     setIsLoading(true)
     setHasSearched(true)
-    searchCards(q).then(async (data) => {
+    setPrices({})
+    setCheckedIds(new Set())
+
+    searchCards(q).then((data) => {
+      if (cancelled) return
       setResults(data)
       setIsLoading(false)
 
-      const enriched = await Promise.all(
-        data.map(async (card) => {
-          if (card.current_price > 0) return card
-          const details = await getCardDetails(card.id)
+      const missing = data.filter((c) => !(c.current_price > 0))
+      for (const card of missing) {
+        getCardDetails(card.id).then((details) => {
+          if (cancelled) return
+          setCheckedIds((prev) => new Set(prev).add(card.id))
           if (details && details.current_price > 0) {
-            return { ...card, current_price: details.current_price }
+            setPrices((prev) => ({ ...prev, [card.id]: details.current_price }))
           }
-          return card
         })
-      )
-      setResults(enriched)
+      }
     })
+
+    return () => { cancelled = true }
   }, [q])
+
+  const getPrice = (card: Card) => prices[card.id] ?? card.current_price
+  const isPriceLoading = (card: Card) => !(card.current_price > 0) && !checkedIds.has(card.id)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -152,13 +163,18 @@ function SearchResults() {
                 <p className="text-xs text-gray-500 dark:text-white/60 mb-3">
                   {card.set_name}
                 </p>
-                {card.current_price > 0 ? (
+                {getPrice(card) > 0 ? (
                   <div className="text-lg font-bold text-gray-900 dark:text-white">
-                    ${card.current_price.toFixed(2)}
+                    ${getPrice(card).toFixed(2)}
+                  </div>
+                ) : isPriceLoading(card) ? (
+                  <div className="text-xs text-gray-400 dark:text-white/40">
+                    <Loader2 className="w-3 h-3 animate-spin inline mr-1" />
+                    Loading price...
                   </div>
                 ) : (
                   <div className="text-sm font-semibold text-gray-400 dark:text-white/40 italic">
-                    Price Coming Soon
+                    Price Unavailable
                   </div>
                 )}
               </button>
