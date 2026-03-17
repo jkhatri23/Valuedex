@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getCardDetails, CardDetails } from '@/lib/api'
 import { ExternalLink, Loader2, Star, Calendar, Palette, Hash } from 'lucide-react'
 
@@ -13,6 +13,8 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
   const [details, setDetails] = useState<CardDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const onDetailsLoadedRef = useRef(onDetailsLoaded)
+  onDetailsLoadedRef.current = onDetailsLoaded
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -22,7 +24,7 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
         const data = await getCardDetails(card.id)
         if (data) {
           setDetails(data)
-          onDetailsLoaded?.(data)
+          onDetailsLoadedRef.current?.(data)
         } else {
           setError('Failed to load card details')
         }
@@ -35,7 +37,7 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
     }
 
     fetchDetails()
-  }, [card.id, onDetailsLoaded])
+  }, [card.id])
 
   if (isLoading) {
     return (
