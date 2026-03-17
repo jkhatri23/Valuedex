@@ -219,7 +219,7 @@ export default function ComparePanel({ primaryCard, primaryPrediction }: Compare
   }
 
   return (
-    <div className="card animate-fade-in">
+    <div className="card">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <GitCompareArrows className="w-6 h-6 text-gray-600 dark:text-gray-400" />
