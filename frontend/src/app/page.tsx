@@ -442,10 +442,16 @@ function HomeContent() {
             <p className="text-gray-600 dark:text-white/70 mb-3 font-light">
               Data powered by eBay API &amp; Pokemon TCG API • Predictions by Advanced ML Models
             </p>
-            <p className="text-sm text-gray-500 dark:text-white/50 font-light max-w-3xl mx-auto">
+            <p className="text-sm text-gray-500 dark:text-white/50 font-light max-w-3xl mx-auto mb-6">
               For entertainment and educational purposes only. Not financial advice. 
               This site is not affiliated with, endorsed, or sponsored by The Pokémon Company International, Nintendo, or Game Freak.
             </p>
+            <div className="flex items-center justify-center space-x-1 text-sm text-gray-500 dark:text-white/50 font-light">
+              <span>Follow us on Twitter</span>
+              <a href="https://twitter.com/jordankhatri23" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium">@jordankhatri23</a>
+              <span>&amp;</span>
+              <a href="https://twitter.com/joeylu06" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium">@joeylu06</a>
+            </div>
           </div>
         </div>
       </footer>
