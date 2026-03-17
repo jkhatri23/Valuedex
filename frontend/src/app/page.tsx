@@ -110,27 +110,44 @@ function HomeContent() {
       <header className="bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10 sticky top-0 z-50 animate-slide-up relative" style={{ animationDelay: '0ms', opacity: 0, animationFillMode: 'forwards' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div className="flex items-center justify-between">
-            <button
-              onClick={() => {
-                setSelectedCard(null)
-                setCardDetails(null)
-                setLatestPrediction(null)
-              }}
-              className="flex items-center space-x-2"
-            >
-              <div className="bg-black p-2 rounded-lg hover:scale-110 transition-transform duration-300">
-                <Image 
-                  src="/logo.png" 
-                  alt="Valuedex Logo" 
-                  width={24} 
-                  height={24}
-                  className="w-6 h-6"
-                />
+            {selectedCard ? (
+              <button
+                onClick={() => {
+                  setSelectedCard(null)
+                  setCardDetails(null)
+                  setLatestPrediction(null)
+                }}
+                className="flex items-center space-x-2 cursor-pointer"
+              >
+                <div className="bg-black p-2 rounded-lg hover:scale-110 transition-transform duration-300">
+                  <Image 
+                    src="/logo.png" 
+                    alt="Valuedex Logo" 
+                    width={24} 
+                    height={24}
+                    className="w-6 h-6"
+                  />
+                </div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+                  Valuedex
+                </h1>
+              </button>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <div className="bg-black p-2 rounded-lg">
+                  <Image 
+                    src="/logo.png" 
+                    alt="Valuedex Logo" 
+                    width={24} 
+                    height={24}
+                    className="w-6 h-6"
+                  />
+                </div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+                  Valuedex
+                </h1>
               </div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-                Valuedex
-              </h1>
-            </button>
+            )}
             <ThemeToggle />
           </div>
         </div>
