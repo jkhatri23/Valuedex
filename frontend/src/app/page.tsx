@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Image from 'next/image'
+import { useRouter, useSearchParams } from 'next/navigation'
 import SearchBar from '@/components/SearchBar'
 import CardDisplay from '@/components/CardDisplay'
 import PriceChart from '@/components/PriceChart'
@@ -10,19 +11,39 @@ import InvestmentRating from '@/components/InvestmentRating'
 import ComparePanel from '@/components/ComparePanel'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useScrollAnimation } from '@/hooks/useScrollAnimation'
+import { getCardDetails } from '@/lib/api'
 import { Brain, Database, LineChart, Target } from 'lucide-react'
 
-export default function Home() {
+function HomeContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedCard, setSelectedCard] = useState<any>(null)
   const [cardDetails, setCardDetails] = useState<any>(null)
   const [latestPrediction, setLatestPrediction] = useState<any>(null)
   const [featuredCards, setFeaturedCards] = useState<any[]>([])
   
-  // Scroll animation hooks for different sections
   const featuresAnimation = useScrollAnimation({ threshold: 0.15 })
   const techStackAnimation = useScrollAnimation({ threshold: 0.2 })
   const footerAnimation = useScrollAnimation({ threshold: 0.3 })
   const galleryAnimation = useScrollAnimation({ threshold: 0.2 })
+
+  useEffect(() => {
+    const cardId = searchParams.get('cardId')
+    if (cardId) {
+      getCardDetails(cardId).then((details) => {
+        if (details) {
+          setSelectedCard({
+            id: details.id ?? details.external_id ?? cardId,
+            name: details.name,
+            set_name: details.set_name,
+            current_price: details.current_price,
+            image_url: details.image_url,
+          })
+        }
+      })
+      router.replace('/', { scroll: false })
+    }
+  }, [searchParams, router])
 
   // Fetch featured cards on mount
   useEffect(() => {
@@ -89,22 +110,44 @@ export default function Home() {
       <header className="bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10 sticky top-0 z-50 animate-slide-up relative" style={{ animationDelay: '0ms', opacity: 0, animationFillMode: 'forwards' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="bg-black p-2 rounded-lg hover:scale-110 transition-transform duration-300">
-                <Image 
-                  src="/logo.png" 
-                  alt="Valuedex Logo" 
-                  width={24} 
-                  height={24}
-                  className="w-6 h-6"
-                />
-              </div>
-              <div>
+            {selectedCard ? (
+              <button
+                onClick={() => {
+                  setSelectedCard(null)
+                  setCardDetails(null)
+                  setLatestPrediction(null)
+                }}
+                className="flex items-center space-x-2 cursor-pointer"
+              >
+                <div className="bg-black p-2 rounded-lg hover:scale-110 transition-transform duration-300">
+                  <Image 
+                    src="/logo.png" 
+                    alt="Valuedex Logo" 
+                    width={24} 
+                    height={24}
+                    className="w-6 h-6"
+                  />
+                </div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+                  Valuedex
+                </h1>
+              </button>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <div className="bg-black p-2 rounded-lg">
+                  <Image 
+                    src="/logo.png" 
+                    alt="Valuedex Logo" 
+                    width={24} 
+                    height={24}
+                    className="w-6 h-6"
+                  />
+                </div>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
                   Valuedex
                 </h1>
               </div>
-            </div>
+            )}
             <ThemeToggle />
           </div>
         </div>
@@ -135,7 +178,10 @@ export default function Home() {
 
           {/* Search Section */}
           <div className="max-w-2xl mx-auto mb-16 md:mb-20">
-            <SearchBar onSelectCard={(card) => setSelectedCard(card)} />
+            <SearchBar
+              onSelectCard={(card) => setSelectedCard(card)}
+              onSearch={(q) => router.push(`/search?q=${encodeURIComponent(q)}`)}
+            />
           </div>
 
           {/* Featured Cards Gallery */}
@@ -396,14 +442,28 @@ export default function Home() {
             <p className="text-gray-600 dark:text-white/70 mb-3 font-light">
               Data powered by eBay API &amp; Pokemon TCG API • Predictions by Advanced ML Models
             </p>
-            <p className="text-sm text-gray-500 dark:text-white/50 font-light max-w-3xl mx-auto">
+            <p className="text-sm text-gray-500 dark:text-white/50 font-light max-w-3xl mx-auto mb-6">
               For entertainment and educational purposes only. Not financial advice. 
               This site is not affiliated with, endorsed, or sponsored by The Pokémon Company International, Nintendo, or Game Freak.
             </p>
+            <div className="flex items-center justify-center space-x-1 text-sm text-gray-500 dark:text-white/50 font-light">
+              <span>Follow us on Twitter</span>
+              <a href="https://twitter.com/jordankhatri23" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium">@jordankhatri23</a>
+              <span>&amp;</span>
+              <a href="https://twitter.com/joeylu06" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium">@joeylu06</a>
+            </div>
           </div>
         </div>
       </footer>
     </main>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <HomeContent />
+    </Suspense>
   )
 }
 
