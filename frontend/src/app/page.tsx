@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Image from 'next/image'
+import { useRouter, useSearchParams } from 'next/navigation'
 import SearchBar from '@/components/SearchBar'
 import CardDisplay from '@/components/CardDisplay'
 import PriceChart from '@/components/PriceChart'
@@ -10,19 +11,39 @@ import InvestmentRating from '@/components/InvestmentRating'
 import ComparePanel from '@/components/ComparePanel'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useScrollAnimation } from '@/hooks/useScrollAnimation'
+import { getCardDetails } from '@/lib/api'
 import { Brain, Database, LineChart, Target } from 'lucide-react'
 
-export default function Home() {
+function HomeContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedCard, setSelectedCard] = useState<any>(null)
   const [cardDetails, setCardDetails] = useState<any>(null)
   const [latestPrediction, setLatestPrediction] = useState<any>(null)
   const [featuredCards, setFeaturedCards] = useState<any[]>([])
   
-  // Scroll animation hooks for different sections
   const featuresAnimation = useScrollAnimation({ threshold: 0.15 })
   const techStackAnimation = useScrollAnimation({ threshold: 0.2 })
   const footerAnimation = useScrollAnimation({ threshold: 0.3 })
   const galleryAnimation = useScrollAnimation({ threshold: 0.2 })
+
+  useEffect(() => {
+    const cardId = searchParams.get('cardId')
+    if (cardId) {
+      getCardDetails(cardId).then((details) => {
+        if (details) {
+          setSelectedCard({
+            id: details.id ?? details.external_id ?? cardId,
+            name: details.name,
+            set_name: details.set_name,
+            current_price: details.current_price,
+            image_url: details.image_url,
+          })
+        }
+      })
+      router.replace('/', { scroll: false })
+    }
+  }, [searchParams, router])
 
   // Fetch featured cards on mount
   useEffect(() => {
@@ -135,7 +156,10 @@ export default function Home() {
 
           {/* Search Section */}
           <div className="max-w-2xl mx-auto mb-16 md:mb-20">
-            <SearchBar onSelectCard={(card) => setSelectedCard(card)} />
+            <SearchBar
+              onSelectCard={(card) => setSelectedCard(card)}
+              onSearch={(q) => router.push(`/search?q=${encodeURIComponent(q)}`)}
+            />
           </div>
 
           {/* Featured Cards Gallery */}
@@ -404,6 +428,14 @@ export default function Home() {
         </div>
       </footer>
     </main>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <HomeContent />
+    </Suspense>
   )
 }
 

@@ -6,9 +6,10 @@ import { Search, Loader2 } from 'lucide-react'
 
 interface SearchBarProps {
   onSelectCard: (card: any) => void
+  onSearch?: (query: string) => void
 }
 
-export default function SearchBar({ onSelectCard }: SearchBarProps) {
+export default function SearchBar({ onSelectCard, onSearch }: SearchBarProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -65,6 +66,14 @@ export default function SearchBar({ onSelectCard }: SearchBarProps) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && query.length >= 2 && onSearch) {
+              e.preventDefault()
+              setIsOpen(false)
+              setResults([])
+              onSearch(query)
+            }
+          }}
           placeholder="Search for any Pokémon card..."
           className="w-full pl-12 pr-5 py-3 text-base border-2 border-gray-200 dark:border-white/10 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder:text-gray-400 bg-white dark:bg-[#1a1a1a] dark:text-white dark:placeholder:text-gray-500 shadow-sm hover:shadow-md"
         />
