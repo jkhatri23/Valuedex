@@ -202,7 +202,9 @@ function HomeContent() {
                   <button
                     key={card.id}
                     onClick={() => setSelectedCard(card)}
-                    className="group bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg p-5 hover:scale-105 hover:border-gray-300 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300"
+                    className={`group bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg p-5 hover:scale-105 hover:border-gray-300 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 ${
+                      index === featuredCards.length - 1 && featuredCards.length % 2 === 1 ? 'col-span-2 max-w-[calc(50%-0.75rem)] mx-auto md:col-span-1 md:max-w-none' : ''
+                    }`}
                     style={{ 
                       transitionDelay: `${index * 50}ms`,
                       animationDelay: `${index * 100}ms`
