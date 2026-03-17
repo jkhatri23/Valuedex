@@ -87,12 +87,12 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
         <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">
           Predict price in how many years?
         </label>
-        <div className="flex items-center space-x-3 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4">
           {[1, 2, 3, 5].map((year) => (
               <button
                 key={year}
                 onClick={() => { setYearsAhead(year); setPrediction(null); onPredictionGenerated?.(null) }}
-                className={`px-5 py-2.5 rounded-lg font-medium transition-all ${
+                className={`px-4 sm:px-5 py-2.5 rounded-lg font-medium transition-all min-h-[44px] ${
                   yearsAhead === year
                     ? 'bg-gray-800 dark:bg-gray-600 text-white'
                     : 'bg-gray-50/50 text-gray-700 hover:bg-gray-100/50 border border-gray-200/50 dark:bg-white/[0.03] dark:text-white/70 dark:hover:bg-white/[0.06] dark:border-white/[0.04]'
@@ -125,17 +125,17 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
       {prediction && (
         <div className="space-y-6 animate-fade-in">
           {/* Recommendation Badge */}
-          <div className="bg-gray-50/50 border border-gray-200/50 rounded-lg p-6 dark:bg-white/[0.02] dark:border-white/[0.05]">
-            <div className="flex items-center justify-between">
+          <div className="bg-gray-50/50 border border-gray-200/50 rounded-lg p-4 sm:p-6 dark:bg-white/[0.02] dark:border-white/[0.05]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-2">Investment Recommendation</div>
-                <span className={`inline-block px-6 py-2 rounded-full text-lg font-bold ${getRecommendationColor(prediction.recommendation)}`}>
+                <span className={`inline-block px-6 py-2 rounded-full text-base sm:text-lg font-bold ${getRecommendationColor(prediction.recommendation)}`}>
                   {formatRecommendation(prediction.recommendation)}
                 </span>
               </div>
-              <div className="text-right">
+              <div className="sm:text-right">
                 <div className="text-sm text-gray-600 dark:text-white/70 mb-1">Risk Level</div>
-                <div className={`text-2xl font-bold ${getRiskLevelColor(prediction.risk_assessment.risk_level)}`}>
+                <div className={`text-xl sm:text-2xl font-bold ${getRiskLevelColor(prediction.risk_assessment.risk_level)}`}>
                   {prediction.risk_assessment.risk_level.toUpperCase()}
                 </div>
               </div>
@@ -335,9 +335,9 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
           </div>
 
           {/* Market Factors */}
-          <div className="bg-white/30 border border-gray-100/50 rounded-lg p-6 dark:bg-white/[0.02] dark:border-white/[0.04]">
+          <div className="bg-white/30 border border-gray-100/50 rounded-lg p-4 sm:p-6 dark:bg-white/[0.02] dark:border-white/[0.04]">
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Market Factors</h4>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <span className="text-sm text-gray-600 dark:text-white/70">Popularity Score</span>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">

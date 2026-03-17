@@ -159,8 +159,8 @@ function HomeContent() {
       {!selectedCard && (
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-24 pb-16 md:pt-32 md:pb-20 relative" style={{ zIndex: 1 }}>
           {/* Decorative Background Elements */}
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+          <div className="hidden sm:block absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow" />
+          <div className="hidden sm:block absolute bottom-20 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
           
           {/* Main Hero */}
           <div className="text-center mb-20 md:mb-24 animate-fade-in relative z-10">
@@ -202,7 +202,9 @@ function HomeContent() {
                   <button
                     key={card.id}
                     onClick={() => setSelectedCard(card)}
-                    className="group bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg p-5 hover:scale-105 hover:border-gray-300 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300"
+                    className={`group bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg p-5 hover:scale-105 hover:border-gray-300 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 ${
+                      index === featuredCards.length - 1 && featuredCards.length % 2 === 1 ? 'col-span-2 max-w-[calc(50%-0.75rem)] mx-auto md:col-span-1 md:max-w-none' : ''
+                    }`}
                     style={{ 
                       transitionDelay: `${index * 50}ms`,
                       animationDelay: `${index * 100}ms`
@@ -259,7 +261,7 @@ function HomeContent() {
             </div>
 
             {/* Feature Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10 mb-14">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10 mb-14">
               <div className="bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md p-6 text-center">
                 <div className="w-12 h-12 rounded-md flex items-center justify-center mx-auto mb-3">
                   <LineChart className="w-6 h-6 text-blue-500 dark:text-blue-400" />
@@ -320,23 +322,23 @@ function HomeContent() {
                 techStackAnimation.isVisible ? 'scroll-visible' : 'scroll-hidden'
               }`}
             >
-              <div className="flex flex-col md:flex-row items-center justify-center gap-3 text-gray-900 dark:text-white flex-wrap">
-                <div className="text-center bg-gray-100 dark:bg-white/5 px-5 py-2.5 rounded-md border border-gray-200 dark:border-white/10">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-gray-900 dark:text-white flex-wrap">
+                <div className="w-full sm:w-auto text-center bg-gray-100 dark:bg-white/5 px-5 py-2.5 rounded-md border border-gray-200 dark:border-white/10">
                   <p className="text-xs text-gray-500 dark:text-white/50 mb-0.5 uppercase tracking-wide">Step 1</p>
                   <p className="font-medium text-sm">Exponential Smoothing</p>
                 </div>
-                <div className="text-gray-400">→</div>
-                <div className="text-center bg-gray-100 dark:bg-white/5 px-5 py-2.5 rounded-md border border-gray-200 dark:border-white/10">
+                <div className="text-gray-400 hidden sm:block">→</div>
+                <div className="w-full sm:w-auto text-center bg-gray-100 dark:bg-white/5 px-5 py-2.5 rounded-md border border-gray-200 dark:border-white/10">
                   <p className="text-xs text-gray-500 dark:text-white/50 mb-0.5 uppercase tracking-wide">Step 2</p>
                   <p className="font-medium text-sm">Monte Carlo (GBM)</p>
                 </div>
-                <div className="text-gray-400">→</div>
-                <div className="text-center bg-gray-100 dark:bg-white/5 px-5 py-2.5 rounded-md border border-gray-200 dark:border-white/10">
+                <div className="text-gray-400 hidden sm:block">→</div>
+                <div className="w-full sm:w-auto text-center bg-gray-100 dark:bg-white/5 px-5 py-2.5 rounded-md border border-gray-200 dark:border-white/10">
                   <p className="text-xs text-gray-500 dark:text-white/50 mb-0.5 uppercase tracking-wide">Step 3</p>
                   <p className="font-medium text-sm">Market Factors</p>
                 </div>
-                <div className="text-gray-400">→</div>
-                <div className="text-center bg-green-500 text-white px-5 py-2.5 rounded-md">
+                <div className="text-gray-400 hidden sm:block">→</div>
+                <div className="w-full sm:w-auto text-center bg-green-500 text-white px-5 py-2.5 rounded-md">
                   <p className="text-xs mb-0.5 uppercase tracking-wide opacity-80">Result</p>
                   <p className="font-medium text-sm">ML Prediction</p>
                 </div>
@@ -357,16 +359,16 @@ function HomeContent() {
                 setCardDetails(null)
                 setLatestPrediction(null)
               }}
-              className="text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white font-medium flex items-center space-x-2 transition-colors"
+              className="text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white font-medium flex items-center space-x-2 transition-colors min-h-[44px] py-2"
             >
               <span>← Back to Search</span>
             </button>
           </div>
           
-          <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl p-8 border border-black/[0.03] dark:border-white/[0.03]">
+          <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl p-4 sm:p-8 border border-black/[0.03] dark:border-white/[0.03]">
 
             {/* Row 1: Card Info + Price Chart side by side */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 items-stretch">
               <div className="lg:col-span-1 flex">
                 <div className="w-full">
                   <CardDisplay 

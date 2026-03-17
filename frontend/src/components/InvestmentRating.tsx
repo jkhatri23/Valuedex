@@ -94,7 +94,7 @@ export default function InvestmentRating({ features }: InvestmentRatingProps) {
       {/* Market Trends */}
       <div className="pt-6 border-t border-gray-200 dark:border-white/10">
         <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Market Trends</h4>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="text-center p-3 bg-gray-50/50 border border-gray-100/50 rounded-lg dark:bg-white/[0.02] dark:border-white/[0.04]">
             <div className="text-lg font-bold text-gray-900 dark:text-white">
               {features.trend_30d >= 0 ? '+' : ''}{features.trend_30d.toFixed(1)}%

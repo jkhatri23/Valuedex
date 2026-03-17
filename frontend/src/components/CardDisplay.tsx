@@ -39,7 +39,7 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
 
   if (isLoading) {
     return (
-      <div className="card flex flex-col items-center justify-center h-96">
+      <div className="card flex flex-col items-center justify-center h-64 sm:h-96">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
         <p className="text-gray-600 dark:text-white/80">Loading card details...</p>
         <p className="text-sm text-gray-400 dark:text-white/60 mt-2">This may take a moment</p>
@@ -69,7 +69,7 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
             className="w-full rounded-lg shadow-md"
           />
         ) : (
-          <div className="w-full h-96 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-xl font-semibold dark:from-white/10 dark:to-white/5 dark:text-white/60">
+          <div className="w-full h-64 sm:h-96 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-xl font-semibold dark:from-white/10 dark:to-white/5 dark:text-white/60">
             {details.name}
           </div>
         )}
@@ -78,12 +78,12 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
       {/* Card Info */}
       <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{details.name}</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">{details.name}</h2>
           <p className="text-gray-600 dark:text-white/70">{details.set_name}</p>
         </div>
 
         {/* Details Grid */}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-white/10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-white/10">
           <div className="flex items-start space-x-3">
             <Star className="w-5 h-5 text-yellow-500 mt-0.5" />
             <div>
