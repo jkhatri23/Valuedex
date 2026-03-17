@@ -371,7 +371,18 @@ function HomeContent() {
                 <div className="w-full">
                   <CardDisplay 
                     card={selectedCard} 
-                    onDetailsLoaded={setCardDetails}
+                    onDetailsLoaded={(details) => {
+                      setCardDetails(details)
+                      if (details.current_price > 0) {
+                        setFeaturedCards((prev) =>
+                          prev.map((c) =>
+                            (c.id === selectedCard.id || c.external_id === selectedCard.id || c.id === selectedCard.external_id)
+                              ? { ...c, current_price: details.current_price }
+                              : c
+                          )
+                        )
+                      }
+                    }}
                   />
                 </div>
               </div>
