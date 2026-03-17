@@ -13,31 +13,41 @@ import ThemeToggle from '@/components/ThemeToggle'
 import { getCardDetails } from '@/lib/api'
 import { Brain, Database, LineChart, Target } from 'lucide-react'
 
+function CardIdListener({ onCardId }: { onCardId: (id: string) => void }) {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  useEffect(() => {
+    const cardId = searchParams.get('cardId')
+    if (cardId) {
+      onCardId(cardId)
+      router.replace('/', { scroll: false })
+    }
+  }, [searchParams, router, onCardId])
+
+  return null
+}
+
 function HomeContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [selectedCard, setSelectedCard] = useState<any>(null)
   const [cardDetails, setCardDetails] = useState<any>(null)
   const [latestPrediction, setLatestPrediction] = useState<any>(null)
   const [featuredCards, setFeaturedCards] = useState<any[] | null>(null)
 
-  useEffect(() => {
-    const cardId = searchParams.get('cardId')
-    if (cardId) {
-      getCardDetails(cardId).then((details) => {
-        if (details) {
-          setSelectedCard({
-            id: details.id ?? details.external_id ?? cardId,
-            name: details.name,
-            set_name: details.set_name,
-            current_price: details.current_price,
-            image_url: details.image_url,
-          })
-        }
-      })
-      router.replace('/', { scroll: false })
-    }
-  }, [searchParams, router])
+  const handleCardIdFromUrl = useCallback((cardId: string) => {
+    getCardDetails(cardId).then((details) => {
+      if (details) {
+        setSelectedCard({
+          id: details.id ?? details.external_id ?? cardId,
+          name: details.name,
+          set_name: details.set_name,
+          current_price: details.current_price,
+          image_url: details.image_url,
+        })
+      }
+    })
+  }, [])
 
   useEffect(() => {
     const fetchFeaturedCards = async () => {
@@ -96,6 +106,11 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-[#0a0a0a] dark:via-[#0d0d0d] dark:to-[#0a0a0a] relative">
+      {/* Isolated Suspense for useSearchParams - prevents entire page bailout */}
+      <Suspense fallback={null}>
+        <CardIdListener onCardId={handleCardIdFromUrl} />
+      </Suspense>
+
       {/* Background - only on home */}
       {!selectedCard && (
         <div className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
@@ -195,7 +210,6 @@ function HomeContent() {
             </div>
 
             {featuredCards === null ? (
-              /* Skeleton loading state - shows immediately, no flash */
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                 {[0, 1, 2, 3, 4].map((i) => (
                   <div key={i} className="bg-white/60 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg p-5">
@@ -441,9 +455,5 @@ function HomeContent() {
 }
 
 export default function Home() {
-  return (
-    <Suspense>
-      <HomeContent />
-    </Suspense>
-  )
+  return <HomeContent />
 }
