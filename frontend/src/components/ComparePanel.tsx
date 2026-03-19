@@ -88,7 +88,12 @@ function CardColumn({ label, name, setName, imageUrl, price, grade, features, pr
         <div className="text-xs text-gray-500 dark:text-white/60 mb-1">
           Current Price{grade ? ` (${grade})` : ''}
         </div>
-        {price > 0 ? (
+        {price === -1 ? (
+          <div className="flex items-center space-x-2">
+            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+            <span className="text-sm text-gray-400">Loading price...</span>
+          </div>
+        ) : price > 0 ? (
           <div className="text-2xl font-bold text-gray-900 dark:text-white">${price.toFixed(2)}</div>
         ) : (
           <div className="text-lg font-semibold text-gray-400 dark:text-white/40 italic">Not available</div>
@@ -321,7 +326,7 @@ export default function ComparePanel({ primaryCard, primaryPrediction, primaryGr
       {/* Side-by-side comparison */}
       {compCard && compDetails && !compLoading && (
         <div className="space-y-6">
-          {/* Year selector + controls */}
+          {/* Controls row */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium text-gray-700 dark:text-white/70">Predict:</span>
@@ -339,8 +344,21 @@ export default function ComparePanel({ primaryCard, primaryPrediction, primaryGr
                 </button>
               ))}
             </div>
-            <div className="flex items-center space-x-2">
-              <button onClick={handleGenerate} disabled={predLoading} className="btn-primary flex items-center space-x-2 text-sm py-2 px-4">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-500 dark:text-white/60">Comparison Grade:</span>
+                <select
+                  value={compGrade}
+                  aria-label="Select comparison card grade"
+                  onChange={e => { setCompGrade(e.target.value as CardCondition) }}
+                  className="text-sm px-2 py-1.5 rounded-lg border border-gray-200/50 bg-white/50 dark:bg-white/5 dark:border-white/10 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                >
+                  {GRADE_OPTIONS.map(g => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+              <button onClick={handleGenerate} disabled={predLoading || gradePriceLoading} className="btn-primary flex items-center space-x-2 text-sm py-2 px-4">
                 {predLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 <span>{predLoading ? 'Analyzing...' : 'Generate Prediction'}</span>
               </button>
@@ -362,93 +380,16 @@ export default function ComparePanel({ primaryCard, primaryPrediction, primaryGr
               features={primaryCard.features}
               prediction={primaryPrediction}
             />
-            <div className="flex-1 min-w-0 space-y-4">
-              {/* Grade selector for comparison card */}
-              <div className="flex items-center justify-between">
-                <div className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider">Comparison</div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-500 dark:text-white/60">Grade:</span>
-                  <select
-                    value={compGrade}
-                    aria-label="Select comparison card grade"
-                    onChange={e => { setCompGrade(e.target.value as CardCondition) }}
-                    className="text-xs px-2 py-1.5 rounded-lg border border-gray-200/50 bg-white/50 dark:bg-white/5 dark:border-white/10 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                  >
-                    {GRADE_OPTIONS.map(g => (
-                      <option key={g} value={g}>{g}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Card identity */}
-              <div className="flex items-center space-x-3">
-                {compDetails.image_url ? (
-                  <img src={compDetails.image_url} alt={compDetails.name} className="w-16 h-22 object-contain rounded-lg shadow-sm flex-shrink-0" />
-                ) : (
-                  <div className="w-16 h-22 bg-gray-100 dark:bg-white/10 rounded-lg flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
-                    No img
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <div className="font-semibold text-gray-900 dark:text-white truncate">{compDetails.name}</div>
-                  <div className="text-sm text-gray-500 dark:text-white/60 truncate">{compDetails.set_name}</div>
-                </div>
-              </div>
-
-              {/* Current price */}
-              <div className="bg-white/30 dark:bg-white/[0.02] border border-gray-100/50 dark:border-white/[0.04] rounded-lg p-4">
-                <div className="text-xs text-gray-500 dark:text-white/60 mb-1">
-                  Current Price ({compGrade})
-                </div>
-                {gradePriceLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                    <span className="text-sm text-gray-400">Loading price...</span>
-                  </div>
-                ) : (compGradePrice > 0 ? (
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">${compGradePrice.toFixed(2)}</div>
-                ) : (
-                  <div className="text-lg font-semibold text-gray-400 dark:text-white/40 italic">Not available</div>
-                ))}
-              </div>
-
-              {/* Investment rating */}
-              <div className="bg-white/30 dark:bg-white/[0.02] border border-gray-100/50 dark:border-white/[0.04] rounded-lg p-4">
-                <div className="text-xs text-gray-500 dark:text-white/60 mb-2">Investment Rating</div>
-                {compDetails.features ? (
-                  <div className="space-y-2">
-                    <RatingBadge rating={compDetails.features.investment_rating} />
-                    <div className="text-lg font-bold text-gray-900 dark:text-white">{compDetails.features.investment_score.toFixed(1)}/10</div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-400 dark:text-white/40 italic">Not available</div>
-                )}
-              </div>
-
-              {/* Prediction results */}
-              <div className="bg-white/30 dark:bg-white/[0.02] border border-gray-100/50 dark:border-white/[0.04] rounded-lg p-4">
-                <div className="text-xs text-gray-500 dark:text-white/60 mb-2">Prediction ({compGrade})</div>
-                {compPrediction ? (
-                  <div className="space-y-3">
-                    <div>
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                        ${compPrediction.predicted_price.toFixed(2)}
-                      </div>
-                      <div className={`text-sm font-medium ${compPrediction.growth_rate >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {compPrediction.growth_rate >= 0 ? '+' : ''}{compPrediction.growth_rate.toFixed(1)}% growth
-                      </div>
-                    </div>
-                    <RecommendationBadge rec={compPrediction.recommendation} />
-                    <div className="text-xs text-gray-500 dark:text-white/60">
-                      Risk: {compPrediction.risk_assessment.risk_level.toUpperCase()}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-400 dark:text-white/40 italic">Generate below</div>
-                )}
-              </div>
-            </div>
+            <CardColumn
+              label="Comparison"
+              name={compDetails.name}
+              setName={compDetails.set_name}
+              imageUrl={compDetails.image_url}
+              price={gradePriceLoading ? -1 : compGradePrice}
+              grade={compGrade}
+              features={compDetails.features}
+              prediction={compPrediction}
+            />
           </div>
         </div>
       )}
