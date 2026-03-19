@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { searchCards, getCardDetails, getPrediction, Card, CardDetails, Prediction } from '@/lib/api'
+import { searchCards, getCardDetails, getPrediction, getPriceHistory, Card, CardDetails, CardCondition, Prediction } from '@/lib/api'
 import { GitCompareArrows, Search, Loader2, Sparkles, X } from 'lucide-react'
+
+const GRADE_OPTIONS: CardCondition[] = ['Ungraded', 'PSA 6', 'PSA 7', 'PSA 8', 'PSA 9', 'PSA 10']
 
 interface ComparePanelProps {
   primaryCard: {
@@ -14,6 +16,8 @@ interface ComparePanelProps {
     features?: CardDetails['features']
   }
   primaryPrediction: Prediction | null
+  primaryGrade?: string
+  primaryGradePrice?: number
 }
 
 function RatingBadge({ rating }: { rating: string }) {
@@ -54,11 +58,12 @@ interface CardColumnProps {
   setName: string
   imageUrl?: string
   price: number
+  grade?: string
   features?: CardDetails['features']
   prediction: Prediction | null
 }
 
-function CardColumn({ label, name, setName, imageUrl, price, features, prediction }: CardColumnProps) {
+function CardColumn({ label, name, setName, imageUrl, price, grade, features, prediction }: CardColumnProps) {
   return (
     <div className="flex-1 min-w-0 space-y-4">
       <div className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider">{label}</div>
@@ -80,8 +85,15 @@ function CardColumn({ label, name, setName, imageUrl, price, features, predictio
 
       {/* Current price */}
       <div className="bg-white/30 dark:bg-white/[0.02] border border-gray-100/50 dark:border-white/[0.04] rounded-lg p-4">
-        <div className="text-xs text-gray-500 dark:text-white/60 mb-1">Current Price</div>
-        {price > 0 ? (
+        <div className="text-xs text-gray-500 dark:text-white/60 mb-1">
+          Current Price{grade ? ` (${grade})` : ''}
+        </div>
+        {price === -1 ? (
+          <div className="flex items-center space-x-2">
+            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+            <span className="text-sm text-gray-400">Loading price...</span>
+          </div>
+        ) : price > 0 ? (
           <div className="text-2xl font-bold text-gray-900 dark:text-white">${price.toFixed(2)}</div>
         ) : (
           <div className="text-lg font-semibold text-gray-400 dark:text-white/40 italic">Not available</div>
@@ -127,7 +139,7 @@ function CardColumn({ label, name, setName, imageUrl, price, features, predictio
   )
 }
 
-export default function ComparePanel({ primaryCard, primaryPrediction }: ComparePanelProps) {
+export default function ComparePanel({ primaryCard, primaryPrediction, primaryGrade, primaryGradePrice }: ComparePanelProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Card[]>([])
@@ -137,6 +149,10 @@ export default function ComparePanel({ primaryCard, primaryPrediction }: Compare
   const [compCard, setCompCard] = useState<Card | null>(null)
   const [compDetails, setCompDetails] = useState<CardDetails | null>(null)
   const [compLoading, setCompLoading] = useState(false)
+
+  const [compGrade, setCompGrade] = useState<CardCondition>('Ungraded')
+  const [compGradePrice, setCompGradePrice] = useState<number>(0)
+  const [gradePriceLoading, setGradePriceLoading] = useState(false)
 
   const [yearsAhead, setYearsAhead] = useState(3)
   const [compPrediction, setCompPrediction] = useState<Prediction | null>(null)
@@ -185,6 +201,27 @@ export default function ComparePanel({ primaryCard, primaryPrediction }: Compare
     return () => { cancelled = true }
   }, [compCard])
 
+  // Fetch grade-specific price when comparison card grade changes
+  useEffect(() => {
+    if (!compCard || !compDetails) return
+    setCompPrediction(null)
+
+    if (compGrade === 'Ungraded') {
+      setCompGradePrice(compDetails.current_price)
+      return
+    }
+
+    let cancelled = false
+    setGradePriceLoading(true)
+    getPriceHistory(compCard.id, compGrade, compCard.name, compCard.set_name).then(history => {
+      if (cancelled) return
+      const lastPrice = history.length > 0 ? history[history.length - 1].price : 0
+      setCompGradePrice(lastPrice > 0 ? lastPrice : compDetails.current_price)
+      setGradePriceLoading(false)
+    })
+    return () => { cancelled = true }
+  }, [compGrade, compCard, compDetails])
+
   const handleSelectComp = (card: Card) => {
     setCompCard(card)
     setQuery('')
@@ -196,12 +233,15 @@ export default function ComparePanel({ primaryCard, primaryPrediction }: Compare
     setCompCard(null)
     setCompDetails(null)
     setCompPrediction(null)
+    setCompGrade('Ungraded')
+    setCompGradePrice(0)
   }
 
   const handleGenerate = async () => {
     if (!compCard) return
     setPredLoading(true)
-    const result = await getPrediction(compCard.id, yearsAhead, compCard.name)
+    const effectivePrice = compGradePrice > 0 ? compGradePrice : compDetails?.current_price || 0
+    const result = await getPrediction(compCard.id, yearsAhead, compCard.name, compGrade, effectivePrice)
     if (result) setCompPrediction(result)
     setPredLoading(false)
   }
@@ -286,7 +326,7 @@ export default function ComparePanel({ primaryCard, primaryPrediction }: Compare
       {/* Side-by-side comparison */}
       {compCard && compDetails && !compLoading && (
         <div className="space-y-6">
-          {/* Year selector + controls */}
+          {/* Controls row */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium text-gray-700 dark:text-white/70">Predict:</span>
@@ -304,8 +344,21 @@ export default function ComparePanel({ primaryCard, primaryPrediction }: Compare
                 </button>
               ))}
             </div>
-            <div className="flex items-center space-x-2">
-              <button onClick={handleGenerate} disabled={predLoading} className="btn-primary flex items-center space-x-2 text-sm py-2 px-4">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-500 dark:text-white/60">Comparison Grade:</span>
+                <select
+                  value={compGrade}
+                  aria-label="Select comparison card grade"
+                  onChange={e => { setCompGrade(e.target.value as CardCondition) }}
+                  className="text-sm px-2 py-1.5 rounded-lg border border-gray-200/50 bg-white/50 dark:bg-white/5 dark:border-white/10 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                >
+                  {GRADE_OPTIONS.map(g => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+              <button onClick={handleGenerate} disabled={predLoading || gradePriceLoading} className="btn-primary flex items-center space-x-2 text-sm py-2 px-4">
                 {predLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 <span>{predLoading ? 'Analyzing...' : 'Generate Prediction'}</span>
               </button>
@@ -322,7 +375,8 @@ export default function ComparePanel({ primaryCard, primaryPrediction }: Compare
               name={primaryCard.name}
               setName={primaryCard.set_name}
               imageUrl={primaryCard.image_url}
-              price={primaryCard.current_price}
+              price={primaryGradePrice && primaryGradePrice > 0 ? primaryGradePrice : primaryCard.current_price}
+              grade={primaryGrade || 'Ungraded'}
               features={primaryCard.features}
               prediction={primaryPrediction}
             />
@@ -331,7 +385,8 @@ export default function ComparePanel({ primaryCard, primaryPrediction }: Compare
               name={compDetails.name}
               setName={compDetails.set_name}
               imageUrl={compDetails.image_url}
-              price={compDetails.current_price}
+              price={gradePriceLoading ? -1 : compGradePrice}
+              grade={compGrade}
               features={compDetails.features}
               prediction={compPrediction}
             />
