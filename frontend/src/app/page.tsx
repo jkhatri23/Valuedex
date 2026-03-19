@@ -435,6 +435,8 @@ function HomeContent() {
                     features: cardDetails.features,
                   }}
                   primaryPrediction={latestPrediction}
+                  primaryGrade={selectedCondition}
+                  primaryGradePrice={conditionPrice}
                 />
               </div>
             )}
