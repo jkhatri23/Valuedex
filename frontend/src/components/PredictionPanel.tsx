@@ -132,7 +132,7 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, grade,
 
       {/* Prediction Results */}
       {prediction && (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6">
           {/* Recommendation Badge */}
           <div className="bg-gray-50/50 border border-gray-200/50 rounded-lg p-4 sm:p-6 dark:bg-white/[0.02] dark:border-white/[0.05]">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 
 type Theme = 'light' | 'dark'
 
@@ -12,23 +12,25 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
+function getInitialTheme(): Theme {
+  if (typeof window !== 'undefined') {
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+  }
+  return 'dark'
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('dark')
-  const [initialized, setInitialized] = useState(false)
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme)
+  const isFirstRender = useRef(true)
 
   useEffect(() => {
-    const storedTheme = localStorage.getItem('valuedex-theme') as Theme | null
-    const nextTheme = storedTheme ?? 'dark'
-    setThemeState(nextTheme)
-    document.documentElement.classList.toggle('dark', nextTheme === 'dark')
-    setInitialized(true)
-  }, [])
-
-  useEffect(() => {
-    if (!initialized) return
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
     document.documentElement.classList.toggle('dark', theme === 'dark')
     localStorage.setItem('valuedex-theme', theme)
-  }, [theme, initialized])
+  }, [theme])
 
   const toggleTheme = () => {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'))

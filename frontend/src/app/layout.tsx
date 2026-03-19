@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { Lato } from 'next/font/google'
-import Script from 'next/script'
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
 
@@ -11,18 +10,6 @@ const lato = Lato({
   display: 'swap',
   variable: '--font-main',
 })
-
-const themeInitScript = `
-(function() {
-  try {
-    const storedTheme = localStorage.getItem('valuedex-theme')
-    const nextTheme = storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : 'dark'
-    document.documentElement.classList.toggle('dark', nextTheme === 'dark')
-  } catch (error) {
-    document.documentElement.classList.add('dark')
-  }
-})();
-`
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -49,12 +36,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${lato.variable} dark`} suppressHydrationWarning>
-      <body className={lato.className}>
-        <Script
-          id="valuedex-theme-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('valuedex-theme');var d=t==='light'||t==='dark'?t:'dark';document.documentElement.classList.toggle('dark',d==='dark')}catch(e){document.documentElement.classList.add('dark')}})()`,
+          }}
         />
+      </head>
+      <body className={lato.className}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
