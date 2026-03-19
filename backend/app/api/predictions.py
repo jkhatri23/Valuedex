@@ -79,9 +79,11 @@ class PredictionRequest(BaseModel):
     card_name: Optional[str] = ""
     set_name: Optional[str] = ""
     years_ahead: int = 3
+    grade: Optional[str] = None
+    current_price: Optional[float] = None
     
     class Config:
-        extra = "ignore"  # Ignore extra fields
+        extra = "ignore"
 
 
 @router.post("/predict")
@@ -111,36 +113,69 @@ async def predict_card_price(request: PredictionRequest, db: Session = Depends(g
     if not card:
         raise HTTPException(status_code=404, detail="No cards in database. Please search for a card first.")
     
-    price_history = db.query(PriceHistory).filter(
-        PriceHistory.card_id == card.id
-    ).order_by(PriceHistory.date.asc()).all()
-    
-    # If insufficient price history, fetch real data from PriceCharting
-    if len(price_history) < 2:
-        logger.info(f"Insufficient price history for card {card.id} ({card.name}), fetching from PriceCharting...")
-        price_history = await _fetch_and_store_pricecharting_history(db, card)
-    
-    if not price_history:
-        raise HTTPException(status_code=400, detail="No price history available. PriceCharting has no sales data for this card.")
-    
+    # Determine target grade for price history
+    target_grade = request.grade if request.grade and request.grade != "Ungraded" else None
+
+    # Try grade-specific price history from PriceCharting when a PSA grade is selected
+    grade_price_data = []
+    if target_grade:
+        try:
+            search_results = await asyncio.to_thread(
+                pricecharting_scraper.search_card, card.name, card.set_name, card.card_number
+            )
+            if search_results:
+                best_match = None
+                for r in search_results:
+                    if not r.get("is_first_edition"):
+                        best_match = r
+                        break
+                if not best_match:
+                    best_match = search_results[0]
+
+                sales_by_grade = await asyncio.to_thread(
+                    pricecharting_scraper.get_sales_history, best_match["url"]
+                )
+                grade_sales = sales_by_grade.get(target_grade, [])
+                if grade_sales:
+                    grade_price_data = [{"date": s["date"], "price": s["price"]} for s in grade_sales]
+                    logger.info(f"Using {len(grade_price_data)} {target_grade} price points for prediction")
+        except Exception as e:
+            logger.warning(f"Failed to fetch grade-specific history for {target_grade}: {e}")
+
+    # Fall back to ungraded DB history if no grade-specific data
+    if not grade_price_data:
+        price_history = db.query(PriceHistory).filter(
+            PriceHistory.card_id == card.id
+        ).order_by(PriceHistory.date.asc()).all()
+
+        if len(price_history) < 2:
+            logger.info(f"Insufficient price history for card {card.id} ({card.name}), fetching from PriceCharting...")
+            price_history = await _fetch_and_store_pricecharting_history(db, card)
+
+        if not price_history:
+            raise HTTPException(status_code=400, detail="No price history available. PriceCharting has no sales data for this card.")
+
+        grade_price_data = [{"date": p.date, "price": p.price_loose} for p in price_history]
+
     features = db.query(CardFeature).filter(CardFeature.card_id == card.id).first()
-    
+
     # Generate features if missing, using the most recent real price
     if not features:
-        current_price = price_history[-1].price_loose or 0
-        if current_price > 0:
-            logger.info(f"Generating features for card {card.id} from PriceCharting price ${current_price}")
-            features_dict = feature_service.create_card_features(card, current_price, [])
+        fallback_price = grade_price_data[-1].get("price", 0) if grade_price_data else 0
+        if fallback_price > 0:
+            logger.info(f"Generating features for card {card.id} from price ${fallback_price}")
+            features_dict = feature_service.create_card_features(card, fallback_price, [])
             features = CardFeature(card_id=card.id, **features_dict)
             db.add(features)
             db.commit()
         else:
             raise HTTPException(status_code=400, detail="No valid price data to generate features")
-    
-    price_data = [{"date": p.date, "price": p.price_loose} for p in price_history]
-    
+
+    # Use the grade-specific current price from the frontend if provided
+    effective_price = request.current_price if (request.current_price and request.current_price > 0) else features.current_price
+
     features_dict = {
-        "current_price": features.current_price,
+        "current_price": effective_price,
         "rarity_score": features.rarity_score,
         "popularity_score": features.popularity_score,
         "artist_score": features.artist_score,
@@ -152,18 +187,18 @@ async def predict_card_price(request: PredictionRequest, db: Session = Depends(g
     }
     
     prediction = predictor.predict_hybrid(
-        price_history=price_data,
+        price_history=grade_price_data,
         features=features_dict,
         years_ahead=request.years_ahead
     )
     
     timeline = predictor.generate_prediction_timeline(
-        price_history=price_data,
+        price_history=grade_price_data,
         features=features_dict,
         max_years=5
     )
     
-    growth_rate = (prediction["predicted_price"] - features.current_price) / features.current_price * 100
+    growth_rate = (prediction["predicted_price"] - effective_price) / effective_price * 100 if effective_price > 0 else 0
     
     # Save prediction
     db.add(Prediction(
@@ -181,7 +216,7 @@ async def predict_card_price(request: PredictionRequest, db: Session = Depends(g
     return {
         "card_id": card_id_str or card.external_id,
         "card_name": card.name,
-        "current_price": features.current_price,
+        "current_price": effective_price,
         "predicted_price": prediction["predicted_price"],
         "confidence_lower": prediction["confidence_lower"],
         "confidence_upper": prediction["confidence_upper"],
@@ -194,6 +229,7 @@ async def predict_card_price(request: PredictionRequest, db: Session = Depends(g
         "market_factors": prediction["market_factors"],
         "recommendation": prediction["recommendation"],
         "timeline": timeline,
+        "grade": request.grade or "Ungraded",
         "insights": {
             "time_series_contribution": prediction["time_series_prediction"],
             "feature_contribution": prediction["feature_prediction"],
