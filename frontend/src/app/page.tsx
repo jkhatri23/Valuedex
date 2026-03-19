@@ -16,17 +16,6 @@ import { CardCondition } from '@/lib/api'
 
 function CardIdListener({ onCardId }: { onCardId: (id: string) => void }) {
   const searchParams = useSearchParams()
-  const [selectedCard, setSelectedCard] = useState<any>(null)
-  const [cardDetails, setCardDetails] = useState<any>(null)
-  const [latestPrediction, setLatestPrediction] = useState<any>(null)
-  const [featuredCards, setFeaturedCards] = useState<any[]>([])
-  const [selectedCondition, setSelectedCondition] = useState<CardCondition>('Ungraded')
-  const [conditionPrice, setConditionPrice] = useState<number>(0)
-  
-  const featuresAnimation = useScrollAnimation({ threshold: 0.15 })
-  const techStackAnimation = useScrollAnimation({ threshold: 0.2 })
-  const footerAnimation = useScrollAnimation({ threshold: 0.3 })
-  const galleryAnimation = useScrollAnimation({ threshold: 0.2 })
   const router = useRouter()
 
   useEffect(() => {
@@ -46,6 +35,8 @@ function HomeContent() {
   const [cardDetails, setCardDetails] = useState<any>(null)
   const [latestPrediction, setLatestPrediction] = useState<any>(null)
   const [featuredCards, setFeaturedCards] = useState<any[] | null>(null)
+  const [selectedCondition, setSelectedCondition] = useState<CardCondition>('Ungraded')
+  const [conditionPrice, setConditionPrice] = useState<number>(0)
 
   const handleCardIdFromUrl = useCallback((cardId: string) => {
     getCardDetails(cardId).then((details) => {
