@@ -12,6 +12,7 @@ import ComparePanel from '@/components/ComparePanel'
 import ThemeToggle from '@/components/ThemeToggle'
 import { getCardDetails } from '@/lib/api'
 import { Brain, Database, LineChart, Target } from 'lucide-react'
+import { CardCondition } from '@/lib/api'
 
 function CardIdListener({ onCardId }: { onCardId: (id: string) => void }) {
   const searchParams = useSearchParams()
@@ -34,6 +35,8 @@ function HomeContent() {
   const [cardDetails, setCardDetails] = useState<any>(null)
   const [latestPrediction, setLatestPrediction] = useState<any>(null)
   const [featuredCards, setFeaturedCards] = useState<any[] | null>(null)
+  const [selectedCondition, setSelectedCondition] = useState<CardCondition>('Ungraded')
+  const [conditionPrice, setConditionPrice] = useState<number>(0)
 
   const handleCardIdFromUrl = useCallback((cardId: string) => {
     getCardDetails(cardId).then((details) => {
@@ -137,6 +140,8 @@ function HomeContent() {
                   setSelectedCard(null)
                   setCardDetails(null)
                   setLatestPrediction(null)
+                  setSelectedCondition('Ungraded')
+                  setConditionPrice(0)
                 }}
                 className="flex items-center space-x-2 cursor-pointer"
               >
@@ -363,6 +368,8 @@ function HomeContent() {
                 setSelectedCard(null)
                 setCardDetails(null)
                 setLatestPrediction(null)
+                setSelectedCondition('Ungraded')
+                setConditionPrice(0)
               }}
               className="text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white font-medium flex items-center space-x-2 transition-colors min-h-[44px] py-2"
             >
@@ -388,6 +395,10 @@ function HomeContent() {
                       cardId={selectedCard.id} 
                       cardName={selectedCard.name}
                       setName={selectedCard.set_name}
+                      onConditionChange={(condition, price) => {
+                        setSelectedCondition(condition)
+                        setConditionPrice(price)
+                      }}
                     />
                   </div>
                 )}
@@ -405,7 +416,8 @@ function HomeContent() {
                 <PredictionPanel 
                   cardId={selectedCard.id}
                   cardName={selectedCard.name}
-                  currentPrice={cardDetails.current_price}
+                  currentPrice={conditionPrice > 0 ? conditionPrice : cardDetails.current_price}
+                  grade={selectedCondition}
                   onPredictionGenerated={setLatestPrediction}
                 />
               </div>

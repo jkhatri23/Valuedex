@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getPriceHistory, getAllGradesHistory, PriceHistory, CardCondition, AllGradesHistory, GradeAnalysis } from '@/lib/api'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { TrendingUp, TrendingDown, Loader2, BarChart3, Award, Scale } from 'lucide-react'
@@ -9,6 +9,7 @@ interface PriceChartProps {
   cardId: string
   cardName?: string
   setName?: string
+  onConditionChange?: (condition: CardCondition, currentPrice: number) => void
 }
 
 // Colors for different grades
@@ -45,27 +46,30 @@ function _prepareAllGradesChartData(data: AllGradesHistory): any[] {
   return Object.values(dateMap).sort((a, b) => a.date.localeCompare(b.date))
 }
 
-export default function PriceChart({ cardId, cardName, setName }: PriceChartProps) {
+export default function PriceChart({ cardId, cardName, setName, onConditionChange }: PriceChartProps) {
   const [priceData, setPriceData] = useState<PriceHistory[]>([])
   const [allGradesData, setAllGradesData] = useState<AllGradesHistory | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [condition, setCondition] = useState<CardCondition>('Ungraded')
   const [viewMode, setViewMode] = useState<'single' | 'all'>('single')  // Default to ungraded view
+  const onConditionChangeRef = useRef(onConditionChange)
+  onConditionChangeRef.current = onConditionChange
 
   useEffect(() => {
     const fetchPrices = async () => {
       setIsLoading(true)
       
       if (viewMode === 'all' && cardName) {
-        // Fetch all grades history
         const allData = await getAllGradesHistory(cardId, cardName, setName)
         setAllGradesData(allData)
         setPriceData([])
       } else {
-        // Fetch single grade
         const data = await getPriceHistory(cardId, condition, cardName, setName)
-      setPriceData(data)
+        setPriceData(data)
         setAllGradesData(null)
+
+        const lastPrice = data.length > 0 ? data[data.length - 1].price : 0
+        onConditionChangeRef.current?.(condition, lastPrice)
       }
       
       setIsLoading(false)

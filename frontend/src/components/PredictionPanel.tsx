@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getPrediction, Prediction } from '@/lib/api'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { Sparkles, Loader2, TrendingUp, AlertCircle, Shield, Target, Activity, BarChart3 } from 'lucide-react'
@@ -9,20 +9,24 @@ interface PredictionPanelProps {
   cardId: string
   cardName: string
   currentPrice: number
+  grade?: string
   onPredictionGenerated?: (prediction: Prediction | null) => void
 }
 
-export default function PredictionPanel({ cardId, cardName, currentPrice, onPredictionGenerated }: PredictionPanelProps) {
+export default function PredictionPanel({ cardId, cardName, currentPrice, grade, onPredictionGenerated }: PredictionPanelProps) {
   const [prediction, setPrediction] = useState<Prediction | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [yearsAhead, setYearsAhead] = useState(3)
 
+  useEffect(() => {
+    setPrediction(null)
+    onPredictionGenerated?.(null)
+  }, [grade, currentPrice]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handlePredict = async () => {
-    console.log('handlePredict called with cardId:', cardId, 'cardName:', cardName, 'yearsAhead:', yearsAhead)
     setIsLoading(true)
     try {
-      const result = await getPrediction(cardId || '', yearsAhead, cardName || '')
-      console.log('Prediction result:', result)
+      const result = await getPrediction(cardId || '', yearsAhead, cardName || '', grade, currentPrice)
       if (result) {
         setPrediction(result)
         onPredictionGenerated?.(result)
@@ -79,7 +83,12 @@ export default function PredictionPanel({ cardId, cardName, currentPrice, onPred
     <div className="card">
       <div className="flex items-center space-x-3 mb-6">
         <Sparkles className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Future Price Prediction</h3>
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Future Price Prediction</h3>
+          <p className="text-xs text-gray-500 dark:text-white/60">
+            Based on {grade || 'Ungraded'} pricing • ${currentPrice.toFixed(2)}
+          </p>
+        </div>
       </div>
 
       {/* Prediction Controls */}

@@ -140,15 +140,23 @@ export async function getPriceHistory(
   }
 }
 
-export async function getPrediction(cardId: string, yearsAhead: number = 3, cardName?: string): Promise<Prediction | null> {
+export async function getPrediction(
+  cardId: string,
+  yearsAhead: number = 3,
+  cardName?: string,
+  grade?: string,
+  currentPrice?: number
+): Promise<Prediction | null> {
   try {
-    console.log('Predicting for cardId:', cardId, 'cardName:', cardName, 'years:', yearsAhead)
-    const { data } = await api.post('/api/predict', { 
-      card_id: cardId || '', 
+    const body: Record<string, any> = {
+      card_id: cardId || '',
       card_name: cardName || '',
-      years_ahead: yearsAhead 
-    })
-    console.log('Prediction response:', data)
+      years_ahead: yearsAhead,
+    }
+    if (grade) body.grade = grade
+    if (currentPrice && currentPrice > 0) body.current_price = currentPrice
+
+    const { data } = await api.post('/api/predict', body)
     return data
   } catch (error: any) {
     console.error('Prediction error:', error?.response?.data || error?.message || error)
