@@ -70,6 +70,58 @@ async def rebuild_index():
     )
 
 
+@router.post("/admin/refresh-prices", response_model=UpdateResponse)
+async def refresh_prices(card_ids: list[str] = None):
+    """Refresh prices from PriceCharting for specific cards (or featured cards if none specified)."""
+    from app.database import SessionLocal
+    from app.models.card import Card, PriceHistory, CardFeature
+    from app.services.pricecharting_scraper import pricecharting_scraper
+    from datetime import datetime
+
+    featured = ["gym2-2", "base1-4", "base1-15", "neo1-4", "base1-2"]
+    ids_to_update = card_ids or featured
+
+    db = SessionLocal()
+    updated = {}
+    try:
+        for ext_id in ids_to_update:
+            card = db.query(Card).filter(Card.external_id == ext_id).first()
+            if not card:
+                updated[ext_id] = "not found"
+                continue
+            try:
+                results = pricecharting_scraper.search_card(card.name, card.set_name, card.card_number)
+                if not results:
+                    updated[ext_id] = "no pricecharting results"
+                    continue
+                best = next((r for r in results if not r.get("is_first_edition")), results[0])
+                prices = pricecharting_scraper.get_card_prices(best["url"])
+                new_price = prices.get("ungraded", 0)
+                if new_price <= 0:
+                    updated[ext_id] = "no ungraded price"
+                    continue
+                features = db.query(CardFeature).filter(CardFeature.card_id == card.id).first()
+                old_price = features.current_price if features else 0
+                if features:
+                    features.current_price = new_price
+                db.add(PriceHistory(
+                    card_id=card.id, date=datetime.now(),
+                    price_loose=new_price, volume=1, source="pricecharting"
+                ))
+                updated[ext_id] = f"${old_price:.2f} -> ${new_price:.2f}"
+            except Exception as e:
+                updated[ext_id] = f"error: {e}"
+        db.commit()
+    finally:
+        db.close()
+
+    return UpdateResponse(
+        success=True,
+        message=f"Refreshed {len(updated)} cards",
+        data=updated
+    )
+
+
 @router.get("/admin/sync-status")
 async def get_sync_status():
     """

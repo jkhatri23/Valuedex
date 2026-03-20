@@ -9,6 +9,7 @@ interface PriceChartProps {
   cardId: string
   cardName?: string
   setName?: string
+  currentPrice?: number
   onConditionChange?: (condition: CardCondition, currentPrice: number) => void
 }
 
@@ -46,7 +47,7 @@ function _prepareAllGradesChartData(data: AllGradesHistory): any[] {
   return Object.values(dateMap).sort((a, b) => a.date.localeCompare(b.date))
 }
 
-export default function PriceChart({ cardId, cardName, setName, onConditionChange }: PriceChartProps) {
+export default function PriceChart({ cardId, cardName, setName, currentPrice: propPrice, onConditionChange }: PriceChartProps) {
   const [priceData, setPriceData] = useState<PriceHistory[]>([])
   const [allGradesData, setAllGradesData] = useState<AllGradesHistory | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -255,7 +256,7 @@ export default function PriceChart({ cardId, cardName, setName, onConditionChang
     )
   }
 
-  // If there's no data for this selection, show a friendly message
+  // If there's no data for this selection, show current price or a friendly message
   if (!isLoading && priceData.length === 0) {
     return (
       <div className="card">
@@ -289,14 +290,28 @@ export default function PriceChart({ cardId, cardName, setName, onConditionChang
             </select>
           </div>
         </div>
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-gray-600 dark:text-white/70 font-medium mb-2">
-            No price data available for this condition yet.
-          </p>
-          <p className="text-sm text-gray-500 dark:text-white/60">
-            Try a different condition, or select Ungraded.
-          </p>
-        </div>
+        {propPrice && propPrice > 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              ${propPrice.toFixed(2)}
+            </div>
+            <p className="text-sm text-gray-500 dark:text-white/60">
+              Current Market Price
+            </p>
+            <p className="text-xs text-gray-400 dark:text-white/40 mt-2">
+              Historical chart data is loading — check back soon.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <p className="text-gray-600 dark:text-white/70 font-medium mb-2">
+              No price data available for this condition yet.
+            </p>
+            <p className="text-sm text-gray-500 dark:text-white/60">
+              Try a different condition, or select Ungraded.
+            </p>
+          </div>
+        )}
       </div>
     )
   }

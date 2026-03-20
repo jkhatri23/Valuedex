@@ -100,7 +100,8 @@ async def get_card_detail(
     card_id: str,
     card_name: Optional[str] = None,
     set_name: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = None
 ):
     """Get card details using Pokemon TCG API for images and eBay for pricing."""
     # Check database first (fastest) - try external_id first, then internal id
@@ -154,12 +155,17 @@ async def get_card_detail(
     features = db.query(CardFeature).filter(CardFeature.card_id == card.id).first()
     current_price = features.current_price if features else 0
     
-    # If no price, try to fetch from Pokemon TCG API
-    if current_price == 0 and card.external_id:
-        import logging
-        logger = logging.getLogger(__name__)
-        
-        # Try Pokemon TCG API first
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    price_is_stale = (
+        features is None
+        or current_price == 0
+        or (features.updated_at and (datetime.utcnow() - features.updated_at) > timedelta(hours=24))
+    )
+    
+    if price_is_stale and card.external_id:
+        # Try Pokemon TCG API first (fast, ~1-3s)
         try:
             tcg_card = await asyncio.wait_for(
                 asyncio.to_thread(pokemon_tcg_service.get_card_by_id, card.external_id),
@@ -179,7 +185,7 @@ async def get_card_detail(
                         pricecharting_scraper.search_card, 
                         card.name, 
                         card.set_name,
-                        card.card_number  # Pass actual card number for accurate lookup
+                        card.card_number
                     ),
                     timeout=15.0
                 )
@@ -196,18 +202,25 @@ async def get_card_detail(
             except Exception as e:
                 logger.warning(f"PriceCharting fallback failed for {card.name}: {e}")
         
-        # Save price if we got one
+        # Save refreshed price
         if current_price > 0:
             if features:
                 features.current_price = current_price
+                features.updated_at = datetime.utcnow()
                 db.commit()
             else:
-                # Create features if missing
                 features_dict = feature_service.create_card_features(card, current_price, [])
                 new_features = CardFeature(card_id=card.id, **features_dict)
                 db.add(new_features)
                 db.commit()
                 features = new_features
+        
+        # Background: sync with PriceCharting (the source of truth for the detail page)
+        # so that the next request returns the same price shown in PriceChart
+        if background_tasks and card.name:
+            background_tasks.add_task(
+                _sync_pricecharting_price, card.id, card.name, card.set_name, card.card_number
+            )
     
     # Ensure price history exists for predictions using real PriceCharting data
     existing_history = db.query(PriceHistory).filter(
@@ -395,10 +408,6 @@ async def get_price_history(
                     current_price = loose / 100 if loose > 100 else loose
             
             if current_price > 0:
-                # Generate 12 months of estimated history with slight variance
-                from datetime import datetime, timedelta
-                import random
-                
                 now = datetime.now()
                 for months_ago in range(12, -1, -1):
                     date = now - timedelta(days=months_ago * 30)
@@ -421,6 +430,18 @@ async def get_price_history(
         except Exception as e:
             logger.warning(f"Failed to generate estimated prices: {e}")
     
+    # Sync the latest ungraded price back to the card's stored current_price
+    # so popular cards and card detail page show the same number
+    if card and price_points and (not grade or grade in ("Ungraded", "Near Mint")):
+        latest_price = price_points[-1]["price"]
+        if latest_price > 0:
+            features = db.query(CardFeature).filter(CardFeature.card_id == card.id).first()
+            if features and features.current_price != latest_price:
+                features.current_price = latest_price
+                features.updated_at = datetime.utcnow()
+                db.commit()
+                logger.info(f"Synced current_price to ${latest_price} for {card.name}")
+
     return {"card_id": card_id, "prices": _aggregate_prices(price_points)}
 
 
@@ -751,6 +772,41 @@ def _create_card_from_api(db: Session, card_id: str, data: Dict) -> Card:
     db.commit()
     
     return card
+
+
+def _sync_pricecharting_price(card_id: int, card_name: str, set_name: str, card_number: str = None):
+    """Background task: fetch PriceCharting price and update the stored current_price."""
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        from app.services.pricecharting_scraper import pricecharting_scraper
+        results = pricecharting_scraper.search_card(card_name, set_name, card_number)
+        if not results:
+            return
+        best_match = None
+        for r in results:
+            if not r.get("is_first_edition"):
+                best_match = r
+                break
+        if not best_match:
+            best_match = results[0]
+        sales_by_grade = pricecharting_scraper.get_sales_history(best_match["url"])
+        sales = sales_by_grade.get("Ungraded", [])
+        if sales:
+            latest_price = sales[-1]["price"]
+            if latest_price > 0:
+                db = SessionLocal()
+                try:
+                    features = db.query(CardFeature).filter(CardFeature.card_id == card_id).first()
+                    if features:
+                        features.current_price = latest_price
+                        features.updated_at = datetime.utcnow()
+                        db.commit()
+                        logger.info(f"Background synced {card_name} price to ${latest_price}")
+                finally:
+                    db.close()
+    except Exception as e:
+        logger.warning(f"Background PriceCharting sync failed for {card_name}: {e}")
 
 
 def _generate_price_history(db: Session, card_id: int, current_price: float):
