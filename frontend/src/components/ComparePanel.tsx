@@ -132,7 +132,7 @@ function CardColumn({ label, name, setName, imageUrl, price, grade, features, pr
             </div>
           </div>
         ) : (
-          <div className="text-sm text-gray-400 dark:text-white/40 italic">Generate below</div>
+          <div className="text-sm text-gray-400 dark:text-white/40 italic">Generate above</div>
         )}
       </div>
     </div>
@@ -351,10 +351,10 @@ export default function ComparePanel({ primaryCard, primaryPrediction, primaryGr
                   value={compGrade}
                   aria-label="Select comparison card grade"
                   onChange={e => { setCompGrade(e.target.value as CardCondition) }}
-                  className="text-sm px-2 py-1.5 rounded-lg border border-gray-200/50 bg-white/50 dark:bg-white/5 dark:border-white/10 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                  className="text-sm px-2 py-1.5 rounded-lg border border-gray-200/50 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white dark:border-white/10 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                 >
                   {GRADE_OPTIONS.map(g => (
-                    <option key={g} value={g}>{g}</option>
+                    <option key={g} value={g} className="bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white">{g}</option>
                   ))}
                 </select>
               </div>

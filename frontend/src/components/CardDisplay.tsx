@@ -82,6 +82,11 @@ export default function CardDisplay({ card, onDetailsLoaded }: CardDisplayProps)
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">{details.name}</h2>
           <p className="text-gray-600 dark:text-white/70">{details.set_name}</p>
+          {details.current_price > 0 && (
+            <div className="mt-3 text-3xl font-bold text-gray-900 dark:text-white">
+              ${details.current_price.toFixed(2)}
+            </div>
+          )}
         </div>
 
         {/* Details Grid */}

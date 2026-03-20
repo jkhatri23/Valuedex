@@ -53,6 +53,14 @@ h1, h2, h3, h4, h5, h6 {
     @apply bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white font-medium py-2.5 px-4 rounded-md hover:bg-gray-200 dark:hover:bg-white/20 transition-all duration-200;
   }
 
+  select {
+    color-scheme: light;
+  }
+
+  .dark select {
+    color-scheme: dark;
+  }
+
   .glass-effect {
     @apply bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200 dark:border-white/10;
   }

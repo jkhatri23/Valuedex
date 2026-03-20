@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Lato } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/react'
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
 
@@ -45,6 +46,7 @@ export default function RootLayout({
       </head>
       <body className={lato.className}>
         <ThemeProvider>{children}</ThemeProvider>
+        <Analytics />
       </body>
     </html>
   )

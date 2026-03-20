@@ -395,6 +395,7 @@ function HomeContent() {
                       cardId={selectedCard.id} 
                       cardName={selectedCard.name}
                       setName={selectedCard.set_name}
+                      currentPrice={cardDetails.current_price}
                       onConditionChange={(condition, price) => {
                         setSelectedCondition(condition)
                         setConditionPrice(price)
