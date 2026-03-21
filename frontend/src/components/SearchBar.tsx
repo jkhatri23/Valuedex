@@ -36,8 +36,8 @@ export default function SearchBar({ onSelectCard, onSearch }: SearchBarProps) {
     const delayDebounceFn = setTimeout(async () => {
       if (query.length >= 2) {
         setIsLoading(true)
-        const data = await searchCards(query)
-        setResults(data)
+        const { cards } = await searchCards(query)
+        setResults(cards)
         setIsLoading(false)
         setIsOpen(true)
       } else {
