@@ -1,9 +1,13 @@
-"""In-memory card name -> card IDs index for instant search."""
+"""In-memory card name -> card IDs index for instant search.
+
+Uses an inverted token map for O(1) token lookups instead of scanning
+every card name on each query.
+"""
 
 import logging
 import re
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, FrozenSet, List, Optional, Set
 
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
@@ -14,28 +18,21 @@ logger = logging.getLogger(__name__)
 _NORMALIZE_RE = re.compile(r"[-''.:]+")
 _COLLAPSE_SPACES_RE = re.compile(r"\s+")
 
-# Aliases that users might type vs. what appears in card names.
-# Applied to the search query so "mega charizard" -> also tries "m charizard".
 _QUERY_ALIASES = [
     (re.compile(r"\bmega\b"), "m"),
 ]
 
 
 def _normalize(text: str) -> str:
-    """Normalize a card name or query for matching.
-
-    Strips hyphens / punctuation and collapses whitespace so that both
-    "Zygarde-GX" and the user query "zygarde gx" become "zygarde gx".
-    """
     text = _NORMALIZE_RE.sub(" ", text.lower())
     return _COLLAPSE_SPACES_RE.sub(" ", text).strip()
 
 
-def _query_variants(normalized_query: str) -> List[str]:
-    """Return the query plus any alias-expanded variants.
+def _tokenize(text: str) -> List[str]:
+    return _normalize(text).split()
 
-    e.g. "mega charizard ex" -> ["mega charizard ex", "m charizard ex"]
-    """
+
+def _query_variants(normalized_query: str) -> List[str]:
     variants = [normalized_query]
     for pattern, replacement in _QUERY_ALIASES:
         alt = pattern.sub(replacement, normalized_query)
@@ -46,14 +43,15 @@ def _query_variants(normalized_query: str) -> List[str]:
 
 class CardIndex:
     """
-    Maps normalized card names to lists of card data dicts.
-    Enables sub-millisecond search by doing a simple substring match
-    against pre-built keys instead of hitting an external API.
+    Inverted-index card search. Each token from a card name maps to the set of
+    name-keys that contain it, so a multi-word query is resolved by intersecting
+    token sets — no linear scan required.
     """
 
     def __init__(self):
         self._name_to_cards: Dict[str, List[dict]] = defaultdict(list)
-        self._search_keys: List[Tuple[str, str]] = []
+        self._token_to_keys: Dict[str, Set[str]] = defaultdict(set)
+        self._all_keys: List[str] = []
         self._card_count = 0
 
     @property
@@ -75,6 +73,7 @@ class CardIndex:
             )
 
             new_map: Dict[str, List[dict]] = defaultdict(list)
+            new_tokens: Dict[str, Set[str]] = defaultdict(set)
 
             for card, price in cards:
                 raw_name = (card.name or "").strip()
@@ -94,23 +93,44 @@ class CardIndex:
                     "card_number": card.card_number,
                 })
 
+                for token in _tokenize(raw_name):
+                    new_tokens[token].add(name_key)
+
             self._name_to_cards = new_map
-            # Store both the original key and the normalized form for matching
-            self._search_keys = sorted(
-                [(key, _normalize(key)) for key in new_map.keys()],
-                key=lambda t: t[1],
-            )
+            self._token_to_keys = new_tokens
+            self._all_keys = sorted(new_map.keys())
             self._card_count = sum(len(v) for v in new_map.values())
             logger.info(
-                f"Card index built: {len(self._search_keys)} unique names, "
-                f"{self._card_count} total cards"
+                f"Card index built: {len(self._all_keys)} unique names, "
+                f"{self._card_count} total cards, "
+                f"{len(self._token_to_keys)} tokens"
             )
         finally:
             if close_db:
                 db.close()
 
-    def search(self, query: str, limit: int = 20) -> List[dict]:
-        """Fast substring search against the index.
+    def _matching_keys(self, query_str: str) -> Set[str]:
+        """Find name-keys matching all tokens in query_str via set intersection."""
+        tokens = query_str.split()
+        if not tokens:
+            return set()
+
+        matched: Optional[Set[str]] = None
+        for token in tokens:
+            token_matches: Set[str] = set()
+            for idx_token, keys in self._token_to_keys.items():
+                if token in idx_token:
+                    token_matches |= keys
+            if matched is None:
+                matched = token_matches
+            else:
+                matched &= token_matches
+            if not matched:
+                return set()
+        return matched or set()
+
+    def search(self, query: str, limit: int = 100) -> List[dict]:
+        """Token-intersection search with alias expansion.
 
         Normalizes the query so "zygarde gx" matches "Zygarde-GX",
         "charizard ex" matches "Charizard-EX", "mega charizard"
@@ -121,17 +141,13 @@ class CardIndex:
             return []
 
         variants = _query_variants(q)
-        seen_keys: set = set()
-        results: List[dict] = []
+        matched_keys: Set[str] = set()
+        for variant in variants:
+            matched_keys |= self._matching_keys(variant)
 
-        for original_key, normalized_key in self._search_keys:
-            if original_key in seen_keys:
-                continue
-            for variant in variants:
-                if variant in normalized_key:
-                    seen_keys.add(original_key)
-                    results.extend(self._name_to_cards[original_key])
-                    break
+        results: List[dict] = []
+        for key in sorted(matched_keys):
+            results.extend(self._name_to_cards[key])
             if len(results) >= limit:
                 break
 

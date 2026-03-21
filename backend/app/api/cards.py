@@ -26,7 +26,7 @@ router = APIRouter()
 @router.get("/search")
 async def search_cards(
     q: str,
-    limit: int = 20,
+    limit: int = 100,
     include_grades: bool = False,
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = None
