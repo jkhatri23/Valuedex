@@ -91,6 +91,7 @@ class CardIndex:
                     "rarity": card.rarity,
                     "artist": card.artist,
                     "card_number": card.card_number,
+                    "release_year": card.release_year,
                 })
 
                 for token in _tokenize(raw_name):

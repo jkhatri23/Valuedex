@@ -13,6 +13,7 @@ export interface Card {
   set_name: string
   current_price: number
   image_url?: string
+  release_year?: number
 }
 
 export interface CardDetails {

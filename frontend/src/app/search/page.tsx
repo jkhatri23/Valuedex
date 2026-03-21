@@ -4,10 +4,20 @@ import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { searchCards, getCardDetails, Card } from '@/lib/api'
-import { Search, Loader2, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Loader2, ArrowLeft, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 
 const CARDS_PER_PAGE = 20
+
+type SortOption = 'default' | 'price_high' | 'price_low' | 'set_newest' | 'set_oldest'
+
+const SORT_LABELS: Record<SortOption, string> = {
+  default: 'Relevance',
+  price_high: 'Price: High to Low',
+  price_low: 'Price: Low to High',
+  set_newest: 'Set: Newest First',
+  set_oldest: 'Set: Oldest First',
+}
 
 function SearchResults() {
   const router = useRouter()
@@ -21,12 +31,35 @@ function SearchResults() {
   const [isLoading, setIsLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [sortBy, setSortBy] = useState<SortOption>('default')
 
-  const totalPages = Math.max(1, Math.ceil(results.length / CARDS_PER_PAGE))
+  const getPrice = (card: Card) => prices[card.id] ?? card.current_price
+
+  const sortedResults = useMemo(() => {
+    if (sortBy === 'default') return results
+    const sorted = [...results]
+    switch (sortBy) {
+      case 'price_high':
+        sorted.sort((a, b) => (getPrice(b) || 0) - (getPrice(a) || 0))
+        break
+      case 'price_low':
+        sorted.sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0))
+        break
+      case 'set_newest':
+        sorted.sort((a, b) => (b.release_year ?? 0) - (a.release_year ?? 0))
+        break
+      case 'set_oldest':
+        sorted.sort((a, b) => (a.release_year ?? 9999) - (b.release_year ?? 9999))
+        break
+    }
+    return sorted
+  }, [results, sortBy, prices])
+
+  const totalPages = Math.max(1, Math.ceil(sortedResults.length / CARDS_PER_PAGE))
 
   const paginatedResults = useMemo(
-    () => results.slice((currentPage - 1) * CARDS_PER_PAGE, currentPage * CARDS_PER_PAGE),
-    [results, currentPage]
+    () => sortedResults.slice((currentPage - 1) * CARDS_PER_PAGE, currentPage * CARDS_PER_PAGE),
+    [sortedResults, currentPage]
   )
 
   useEffect(() => {
@@ -41,6 +74,7 @@ function SearchResults() {
     setPrices({})
     setCheckedIds(new Set())
     setCurrentPage(1)
+    setSortBy('default')
 
     searchCards(q).then((data) => {
       if (cancelled) return
@@ -71,7 +105,6 @@ function SearchResults() {
     return () => { cancelled = true }
   }, [paginatedResults, checkedIds])
 
-  const getPrice = (card: Card) => prices[card.id] ?? card.current_price
   const isPriceLoading = (card: Card) => !(card.current_price > 0) && !checkedIds.has(card.id)
 
   const handleSearch = (e: React.FormEvent) => {
@@ -83,6 +116,11 @@ function SearchResults() {
 
   const handleCardClick = (card: Card) => {
     router.push(`/card/${card.id}`)
+  }
+
+  const handleSortChange = (value: SortOption) => {
+    setSortBy(value)
+    setCurrentPage(1)
   }
 
   const goToPage = (page: number) => {
@@ -158,14 +196,34 @@ function SearchResults() {
         </form>
 
         {q && (
-          <div className="flex items-baseline justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Search results for &ldquo;{q}&rdquo;
-            </h2>
-            {!isLoading && results.length > 0 && (
-              <span className="text-sm text-gray-500 dark:text-white/50">
-                {results.length} card{results.length !== 1 && 's'} found
-              </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div className="flex items-baseline gap-3">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Search results for &ldquo;{q}&rdquo;
+              </h2>
+              {!isLoading && results.length > 0 && (
+                <span className="text-sm text-gray-500 dark:text-white/50">
+                  {results.length} card{results.length !== 1 && 's'} found
+                </span>
+              )}
+            </div>
+            {!isLoading && results.length > 1 && (
+              <div className="relative flex items-center gap-2">
+                <ArrowUpDown className="w-4 h-4 text-gray-400 dark:text-white/40 shrink-0" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => handleSortChange(e.target.value as SortOption)}
+                  aria-label="Sort results"
+                  className="appearance-none bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg pl-3 pr-8 py-2 text-sm text-gray-700 dark:text-white/80 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none cursor-pointer transition-colors hover:border-gray-300 dark:hover:border-white/20"
+                >
+                  {(Object.keys(SORT_LABELS) as SortOption[]).map((key) => (
+                    <option key={key} value={key}>
+                      {SORT_LABELS[key]}
+                    </option>
+                  ))}
+                </select>
+                <ChevronRight className="w-4 h-4 text-gray-400 dark:text-white/40 absolute right-2 rotate-90 pointer-events-none" />
+              </div>
             )}
           </div>
         )}
