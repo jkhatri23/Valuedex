@@ -1,13 +1,15 @@
 """In-memory card name -> card IDs index for instant search.
 
 Uses an inverted token map for O(1) token lookups instead of scanning
-every card name on each query.
+every card name on each query.  Includes fuzzy fallback via
+difflib so typos like "charizarq" still find "charizard".
 """
 
 import logging
 import re
 from collections import defaultdict
-from typing import Dict, FrozenSet, List, Optional, Set
+from difflib import get_close_matches
+from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
@@ -130,28 +132,76 @@ class CardIndex:
                 return set()
         return matched or set()
 
-    def search(self, query: str, limit: int = 100) -> List[dict]:
-        """Token-intersection search with alias expansion.
+    def _fuzzy_match_tokens(self, tokens: List[str], cutoff: float = 0.7) -> Tuple[List[str], bool]:
+        """Try to correct each query token against the indexed vocabulary.
+        Returns (corrected_tokens, was_corrected)."""
+        all_indexed = list(self._token_to_keys.keys())
+        if not all_indexed:
+            return tokens, False
 
-        Normalizes the query so "zygarde gx" matches "Zygarde-GX",
-        "charizard ex" matches "Charizard-EX", "mega charizard"
-        matches "M Charizard-EX", etc.
+        corrected: List[str] = []
+        changed = False
+        for token in tokens:
+            if token in self._token_to_keys:
+                corrected.append(token)
+                continue
+            # Check if the token is a substring of any indexed token (already matched by _matching_keys)
+            if any(token in idx_tok for idx_tok in all_indexed):
+                corrected.append(token)
+                continue
+            matches = get_close_matches(token, all_indexed, n=1, cutoff=cutoff)
+            if matches:
+                corrected.append(matches[0])
+                changed = True
+            else:
+                corrected.append(token)
+        return corrected, changed
+
+    def search(self, query: str, limit: int = 100) -> Tuple[List[dict], Optional[str]]:
+        """Token-intersection search with alias expansion and fuzzy fallback.
+
+        Returns (results, corrected_query) where corrected_query is the
+        spell-corrected query string when the original had no exact matches,
+        or None if no correction was needed.
         """
         q = _normalize(query)
         if not q:
-            return []
+            return [], None
 
         variants = _query_variants(q)
         matched_keys: Set[str] = set()
         for variant in variants:
             matched_keys |= self._matching_keys(variant)
 
-        results: List[dict] = []
+        if matched_keys:
+            results: List[dict] = []
+            for key in sorted(matched_keys):
+                results.extend(self._name_to_cards[key])
+                if len(results) >= limit:
+                    break
+            return results[:limit], None
+
+        # No exact matches — try fuzzy correction
+        tokens = q.split()
+        corrected_tokens, was_corrected = self._fuzzy_match_tokens(tokens)
+        if not was_corrected:
+            return [], None
+
+        corrected_query = " ".join(corrected_tokens)
+        corrected_variants = _query_variants(corrected_query)
+        for variant in corrected_variants:
+            matched_keys |= self._matching_keys(variant)
+
+        results = []
         for key in sorted(matched_keys):
             results.extend(self._name_to_cards[key])
             if len(results) >= limit:
                 break
 
-        return results[:limit]
+        if results:
+            logger.info(f"Fuzzy corrected '{q}' -> '{corrected_query}' ({len(results)} results)")
+            return results[:limit], corrected_query
+
+        return [], None
 
 card_index = CardIndex()

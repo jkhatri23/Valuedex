@@ -32,6 +32,7 @@ function SearchResults() {
   const [hasSearched, setHasSearched] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortBy, setSortBy] = useState<SortOption>('default')
+  const [correctedQuery, setCorrectedQuery] = useState<string | null>(null)
 
   const getPrice = (card: Card) => prices[card.id] ?? card.current_price
 
@@ -75,10 +76,12 @@ function SearchResults() {
     setCheckedIds(new Set())
     setCurrentPage(1)
     setSortBy('default')
+    setCorrectedQuery(null)
 
-    searchCards(q).then((data) => {
+    searchCards(q).then(({ cards, correctedQuery: cq }) => {
       if (cancelled) return
-      setResults(data)
+      setResults(cards)
+      setCorrectedQuery(cq)
       setIsLoading(false)
     })
 
@@ -195,11 +198,21 @@ function SearchResults() {
           </div>
         </form>
 
+        {!isLoading && correctedQuery && (
+          <div className="mb-4 text-sm text-gray-600 dark:text-white/60">
+            Showing results for{' '}
+            <span className="font-semibold text-gray-900 dark:text-white">&ldquo;{correctedQuery}&rdquo;</span>
+            <span className="ml-2 text-gray-400 dark:text-white/40">
+              instead of &ldquo;{q}&rdquo;
+            </span>
+          </div>
+        )}
+
         {q && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div className="flex items-baseline gap-3">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Search results for &ldquo;{q}&rdquo;
+                Search results for &ldquo;{correctedQuery || q}&rdquo;
               </h2>
               {!isLoading && results.length > 0 && (
                 <span className="text-sm text-gray-500 dark:text-white/50">

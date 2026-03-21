@@ -36,9 +36,12 @@ async def search_cards(
     query = q.strip()
 
     # 1. Try the in-memory index first (sub-millisecond)
-    indexed = card_index.search(query, limit)
+    indexed, corrected_query = card_index.search(query, limit)
     if indexed:
-        return {"cards": indexed, "count": len(indexed), "source": "index"}
+        resp = {"cards": indexed, "count": len(indexed), "source": "index"}
+        if corrected_query:
+            resp["corrected_query"] = corrected_query
+        return resp
 
     # 2. Fall back to Pokemon TCG API when the index has no matches
     try:

@@ -104,12 +104,20 @@ export interface Prediction {
   }
 }
 
-export async function searchCards(query: string): Promise<Card[]> {
+export interface SearchResult {
+  cards: Card[]
+  correctedQuery: string | null
+}
+
+export async function searchCards(query: string): Promise<SearchResult> {
   try {
     const { data } = await api.get(`/api/cards/search?q=${encodeURIComponent(query)}`)
-    return data.cards || data || []
+    return {
+      cards: data.cards || data || [],
+      correctedQuery: data.corrected_query || null,
+    }
   } catch {
-    return []
+    return { cards: [], correctedQuery: null }
   }
 }
 

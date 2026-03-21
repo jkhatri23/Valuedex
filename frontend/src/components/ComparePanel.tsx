@@ -176,8 +176,8 @@ export default function ComparePanel({ primaryCard, primaryPrediction, primaryGr
     const timer = setTimeout(async () => {
       if (query.length >= 2) {
         setIsSearching(true)
-        const results = await searchCards(query)
-        setSearchResults(results.filter(c => c.id !== primaryCard.id))
+        const { cards } = await searchCards(query)
+        setSearchResults(cards.filter(c => c.id !== primaryCard.id))
         setIsSearching(false)
         setShowDropdown(true)
       } else {
