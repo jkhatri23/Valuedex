@@ -54,3 +54,7 @@ python scripts/bulk_populate.py --max-cards 5000
 
 - **Frontend:** Vercel (set root to `frontend`, add `NEXT_PUBLIC_API_URL` env var)
 - **Backend:** Google Cloud Run via the included `Dockerfile` and `cloudbuild.yaml`
+
+## View Site
+
+Check out the site at https://valuedex.ca/
