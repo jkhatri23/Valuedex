@@ -1,6 +1,11 @@
 # Valuedex
 
-A Pokemon card value predictor that uses historical market data and ML to forecast card prices.
+A Pokemon card value predictor that uses historical market data and ML to forecast card prices. 
+
+
+https://github.com/user-attachments/assets/1ef02713-7d05-4dff-bc85-e3547b7d69d9
+
+
 
 ## Setup
 
