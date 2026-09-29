@@ -58,5 +58,5 @@ python scripts/bulk_populate.py --max-cards 5000
 ## Deployment
 
 - **Frontend:** Vercel (set root to `frontend`, add `NEXT_PUBLIC_API_URL` env var)
-- **Backend:** Google Cloud Run via the included `Dockerfile` and `cloudbuild.yaml`
+- **Backend:** AWS EC2 via the included `Dockerfile` and `cloudbuild.yaml`
 
